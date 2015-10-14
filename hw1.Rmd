@@ -4,37 +4,210 @@ author: "Joshua Burkhart"
 date: "October 13, 2015"
 output: pdf_document
 ---
+```{r}
+library(gapminder)
+library(dplyr)
+library(ggplot2)
+library(grid)
+```
+
+```{r global_options, echo=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/", message = FALSE, warning = FALSE, include = TRUE, echo = TRUE, error = TRUE, fig.width = 11, comment = NA)
+```
+
 HLO Gapminder
 
+```{r}
+str(gapminder)
+glimpse(gapminder)
+names(gapminder)
+head(gapminder)
+nrow(gapminder)
+ncol(gapminder)
+unique(is.na(gapminder))
+```
+    
     Is it a data.frame, a matrix, a vector, a list?
+    data.frame
+    
     What is the unit of analysis in the dataset?
+    Excerpt of the Gapminder data on life expectancy, GDP per capita, and population by country, every five years, from 1952 to 2007
+    from http://www.gapminder.org/data/
+    
     How many variables/columns?
+    6/1704
+    
     How many rows/observations?
+    6/1704
+    
     Which variables are continuous?
+    "lifeExp" "gdpPercap"
+    
     Which variables are discrete?
+    "country" "continent" ("pop" "year")?
+    
     Which variables are categorical?
+    "country" "continent"
+    
     How many levels do they have?
+    country: 142
+    continent: 5
+    
     What about missing data for any variables?
+    no missing data reported
 
 Numerical and counting detective work
 
+```{r}
+summary(gapminder)
+ggplot(gapminder,aes(lifeExp)) + geom_histogram(color = "white")
+```
+
+
     Pick one quantitative variable to explore using descriptive statistics as discussed in class.
+    lifeExp
+    
         Characterize the range of possible values, max vs. min, etc.- does it make sense?
+        Min: 23.6
+        1st Q: 48.2
+        Median: 60.71
+        Mean: 59.47
+        3rd Q: 70.85
+        Max: 82.6
+        
+        These values make sense.
+        
         What's the center? What's the spread? What's the shape?
         Feel free to use summary statistics or tables. You don't need to re-summarise summarised data for us. It is one thing to be able to get R to give you what you ask for. It is another to interpret what R gives you. We are more interested in the latter here, but also that you can do the former without errors.
+        graph looks bimodal, higher peak to the right, skews down
+        
         Comment on representativeness of measures of central tendency, given the spread and shape.
+        IQR / median / mean don't hint at the bimodal distribution but
+        mean < median does hint at skew down
+        
     Pick one categorical variable and generate the n's (in whatever the appropriate "unit of analysis" is) and proportions of the sample that contribute to each level of that variable.
-        Which level contains the smallest number of observations? The largest?
+    continent
+    
+    Africa  :624 = 0.3661972
+    Americas:300 = 0.1760563
+    Asia    :396 = 0.2323944
+    Europe  :360 = 0.2112676
+    Oceania : 24 = 0.01408451
+    
+```{r}
+filter(gapminder, continent=="Africa") %>% nrow / nrow(gapminder)
+filter(gapminder, continent=="Americas") %>% nrow / nrow(gapminder)
+filter(gapminder, continent=="Asia") %>% nrow / nrow(gapminder)
+filter(gapminder, continent=="Europe") %>% nrow / nrow(gapminder)
+filter(gapminder, continent=="Oceania") %>% nrow / nrow(gapminder)
+```
+
+    Which level contains the smallest number of observations? The largest?
+    smallest: Oceana
+    largest: Africa
+    
     Generate your descriptive statistics again, now stratified by the different levels of your categorical variable.
+    
+```{r}
+gapminder %>% filter(continent=="Africa") %>% summary
+gapminder %>% filter(continent=="Americas") %>% summary
+gapminder %>% filter(continent=="Asia") %>% summary
+gapminder %>% filter(continent=="Europe") %>% summary
+gapminder %>% filter(continent=="Oceania") %>% summary
+
+africaPlot <- gapminder %>% filter(continent=="Africa") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Africa")
+
+americasPlot <- gapminder %>% filter(continent=="Americas") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Americas")
+
+asiaPlot <- gapminder %>% filter(continent=="Asia") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Asia")
+
+europePlot <- gapminder %>% filter(continent=="Europe") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Europe")
+
+oceaniaPlot <- gapminder %>% filter(continent=="Oceania") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Oceania")
+
+#from http://stackoverflow.com/questions/24387376/r-weird-error-could-not-find-function-multiplot
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+multiplot(africaPlot,americasPlot,asiaPlot,europePlot,oceaniaPlot, cols=3)
+
+```
+
+    
         How did any of your initial observations of the quantitative variable change?
         Foreshadowing: look for differences in both center and spread across categories. Think about what this means in terms of possible comparisons between means across different levels of that factor.
+        Asia, Americas, and Europe look similar in that they all skew down.
+        Africa and Oceania skew up. The plots indicate the means of Asia, 
+        Americas, and Europe may be lower than their medians, while the
+        plots of Africa and Oceania indicate their means may be higher
+        than their medians.
 
 Graphical detective work
 
-
     Graphically explore your one quantitative variable using histograms and boxplots. See the exploratory data analysis link for example R code.
+
+```{r}
+africaPlot <- gapminder %>% filter(continent=="Africa") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Africa")
+baf <- gapminder %>% filter(continent=="Africa") %>% ggplot(aes(x="Africa",y=lifeExp)) + geom_boxplot()
+americasPlot <- gapminder %>% filter(continent=="Americas") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Americas")
+bam <- gapminder %>% filter(continent=="Americas") %>% ggplot(aes(x="Americas",y=lifeExp)) + geom_boxplot()
+asiaPlot <- gapminder %>% filter(continent=="Asia") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Asia")
+bas <- gapminder %>% filter(continent=="Asia") %>% ggplot(aes(x="Asia",y=lifeExp)) + geom_boxplot()
+europePlot <- gapminder %>% filter(continent=="Europe") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Europe")
+beu <- gapminder %>% filter(continent=="Europe") %>% ggplot(aes(x="Europe",y=lifeExp)) + geom_boxplot()
+boc <- gapminder %>% filter(continent=="Oceania") %>% ggplot(aes(x="Oceania",y=lifeExp)) + geom_boxplot()
+oceaniaPlot <- gapminder %>% filter(continent=="Oceania") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Oceania")
+
+multiplot(baf,africaPlot,
+          bam,americasPlot,
+          bas,asiaPlot,
+          beu,europePlot,
+          boc,oceaniaPlot,
+          cols=5)
+```
+
+
         What are you looking for in each plot?
+        I'm looking for the IQR (box height) and median (where the box is centered).
+        
         Do you notice anything interesting/puzzling/surprising?
+        The box plots seem to match the histograms (duh) but Europe's box plot looks like the odd one out as it has such a small Q2-Q3 range and such a high median. Also, Oceania's Q2-Q3 looks unusually large.
+
+>>>
+
         Look back at your descriptive statistics for your variable. Comment on the descriptive value of the numbers in light of your visualizations. Do a quick sanity check- does everything look consistent across numerical and graphical depictions of your data?
     Add your one categorical variable to the mix and graphically explore your quantitative variable using any of the combination plots discussed in class. Your new plot must account for the categorical variable, either by facetting by levels of that variable, setting an aesthetic (color, shape, etc.) to differ across levels, or stratifying the x-axis by the different levels of your categorical variable. See the exploratory data analysis link for ideas. We want to see you exploring multiple types of plots, and each plot should include at least 2 "layers" of information. Sampling 100 random rows from the dataset is a valid strategy here (reference last slide from Class 2 EDA class) if you want to compare big n/small n types of plots.
 
