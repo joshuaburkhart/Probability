@@ -35,16 +35,16 @@ unique(is.na(gapminder))
     from http://www.gapminder.org/data/
     
     How many variables/columns?
-    6/1704
+    6
     
     How many rows/observations?
-    6/1704
+    1704
     
     Which variables are continuous?
     "lifeExp" "gdpPercap"
     
     Which variables are discrete?
-    "country" "continent" ("pop" "year")?
+    "country" "continent" "pop" "year"
     
     Which variables are categorical?
     "country" "continent"
@@ -62,7 +62,6 @@ Numerical and counting detective work
 summary(gapminder)
 ggplot(gapminder,aes(lifeExp)) + geom_histogram(color = "white")
 ```
-
 
     Pick one quantitative variable to explore using descriptive statistics as discussed in class.
     lifeExp
@@ -109,12 +108,6 @@ filter(gapminder, continent=="Oceania") %>% nrow / nrow(gapminder)
     Generate your descriptive statistics again, now stratified by the different levels of your categorical variable.
     
 ```{r}
-gapminder %>% filter(continent=="Africa") %>% summary
-gapminder %>% filter(continent=="Americas") %>% summary
-gapminder %>% filter(continent=="Asia") %>% summary
-gapminder %>% filter(continent=="Europe") %>% summary
-gapminder %>% filter(continent=="Oceania") %>% summary
-
 africaPlot <- gapminder %>% filter(continent=="Africa") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Africa")
 
 americasPlot <- gapminder %>% filter(continent=="Americas") %>% ggplot(aes(lifeExp)) + geom_histogram(color = "white") + ggtitle("Americas")
@@ -163,6 +156,11 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 
 multiplot(africaPlot,americasPlot,asiaPlot,europePlot,oceaniaPlot, cols=3)
+gapminder %>% filter(continent=="Africa") %>% summary
+gapminder %>% filter(continent=="Americas") %>% summary
+gapminder %>% filter(continent=="Asia") %>% summary
+gapminder %>% filter(continent=="Europe") %>% summary
+gapminder %>% filter(continent=="Oceania") %>% summary
 
 ```
 
@@ -208,8 +206,34 @@ multiplot(baf,africaPlot,
 
 >>>
 
-        Look back at your descriptive statistics for your variable. Comment on the descriptive value of the numbers in light of your visualizations. Do a quick sanity check- does everything look consistent across numerical and graphical depictions of your data?
+        Look back at your descriptive statistics for your variable. Comment on the descriptive value of the numbers in light of your visualizations. 
+        The numbers aren't wrong, they just don't make the differences as apparent.
+        
+        Do a quick sanity check- does everything look consistent across numerical and graphical depictions of your data?
+        yes
+        
     Add your one categorical variable to the mix and graphically explore your quantitative variable using any of the combination plots discussed in class. Your new plot must account for the categorical variable, either by facetting by levels of that variable, setting an aesthetic (color, shape, etc.) to differ across levels, or stratifying the x-axis by the different levels of your categorical variable. See the exploratory data analysis link for ideas. We want to see you exploring multiple types of plots, and each plot should include at least 2 "layers" of information. Sampling 100 random rows from the dataset is a valid strategy here (reference last slide from Class 2 EDA class) if you want to compare big n/small n types of plots.
+    
+```{r}
+
+vaf <- gapminder %>% sample_n(20) %>% filter(continent=="Africa") %>% ggplot(aes(x="Africa",y=lifeExp)) + geom_violin()+ geom_boxplot(width=0.1)+coord_cartesian(ylim = c(25,85))
+vam <- gapminder %>% sample_n(20) %>% filter(continent=="Americas") %>% ggplot(aes(x="Americas",y=lifeExp)) + geom_violin()+ geom_boxplot(width=0.1)+coord_cartesian(ylim = c(25,85))
+vas <- gapminder %>% sample_n(20) %>% filter(continent=="Asia") %>% ggplot(aes(x="Asia",y=lifeExp)) + geom_violin()+ geom_boxplot(width=0.1)+coord_cartesian(ylim = c(25,85))
+veu <- gapminder %>% sample_n(20) %>% filter(continent=="Europe") %>% ggplot(aes(x="Europe",y=lifeExp)) + geom_violin()+ geom_boxplot(width=0.1)+coord_cartesian(ylim = c(25,85))
+voc <- gapminder %>% filter(continent=="Oceania") %>% ggplot(aes(x="Oceania",y=lifeExp)) + geom_violin()+ geom_boxplot(width=0.1)+coord_cartesian(ylim = c(25,85))
+
+multiplot(vaf,
+          vam,
+          vas,
+          veu,
+          voc,
+          cols=5)
+
+```
+
+```{r}
+gapminder %>% ggplot(aes(colour=factor(continent),x=year,y=lifeExp)) + geom_smooth()
+```
 
 In-depth detective work
 
@@ -224,9 +248,20 @@ You do not have to use tidyr or otherwise worry about reshaping your tables. Man
 
 Task menu
 
-
-
     Get the maximum and minimum of GDP per capita for all continents.
+
+```{r}
+library(tidyr)
+library(reshape2)
+library(ggplot2)
+library(gapminder)
+max_min_sum <- gapminder %>% group_by(continent) %>% summarize(min(gdpPercap), max(gdpPercap))
+continent_stack <- max_min_sum %>% melt(id="continent")
+continent_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = round(value)), size = 7)
+max_min_sum
+```
 
     Look at the spread of GDP per capita across countries within the continents.
 
