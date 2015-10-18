@@ -9,6 +9,10 @@ library(gapminder)
 library(dplyr)
 library(ggplot2)
 library(grid)
+library(tidyr)
+library(moments)
+library(psych)
+library(reshape2)
 ```
 
 ```{r global_options, echo=FALSE}
@@ -251,25 +255,17 @@ Task menu
     Get the maximum and minimum of GDP per capita for all continents.
 
 ```{r}
-library(tidyr)
-library(reshape2)
-library(ggplot2)
-library(gapminder)
-max_min_sum <- gapminder %>% group_by(continent) %>% summarize(min(gdpPercap), max(gdpPercap))
-continent_stack <- max_min_sum %>% melt(id="continent")
-continent_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
+max_min_gdp <- gapminder %>% group_by(continent) %>% summarize(min(gdpPercap), max(gdpPercap))
+max_min_gdp_stack <- max_min_gdp %>% melt(id="continent")
+max_min_gdp_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
   geom_bar(stat="identity") +
-  geom_text(aes(label = round(value)), size = 7)
-max_min_sum
+  geom_text(aes(label = round(value)), size = 7) + theme(legend.position="bottom")
+max_min_gdp
 ```
 
     Look at the spread of GDP per capita across countries within the continents.
 
 ```{r}
-library(tidyr)
-library(reshape2)
-library(ggplot2)
-library(gapminder)
 max_min_sum <- gapminder %>% filter(continent=="Africa") %>% group_by(country) %>% summarize(min(gdpPercap), max(gdpPercap))
 max_min_sum
 country_stack <- max_min_sum %>% melt(id=c("country"))
@@ -318,10 +314,6 @@ multiplot(oaf,
     How does life expectancy vary across different continents?
     
 ```{r}
-library(tidyr)
-library(reshape2)
-library(ggplot2)
-library(gapminder)
 max_min_sum <- gapminder %>% group_by(continent) %>% summarize(min(lifeExp), max(lifeExp))
 continent_stack <- max_min_sum %>% melt(id="continent")
 continent_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
@@ -332,14 +324,63 @@ max_min_sum
 
     Report the absolute and/or relative abundance of countries with low life expectancy over time by continent: Compute some measure of worldwide life expectancy - you decide - a mean or median or some other quantile or perhaps your current age. Then determine how many countries on each continent have a life expectancy less than this benchmark, for each year.
 
+```{r}
+#group by year
+g_by_year <- gapminder %>% melt(id=c("year","lifeExp","country"))
+
+#low lifeExp = lifeExp < median for year
+median_by_year <- g_by_year %>% group_by(year) %>% summarize(median(lifeExp))
+
+#num countries where lifeExp < low lifeExp
+num_c_by_year <- g_by_year %>% group_by(year) %>% summarise(count = length(country[lifeExp < median_by_year$`median(lifeExp)`]))
+
+#x=year,y=num_countries
+num_c_by_year %>% ggplot(aes(fill="red",x=year,y=count)) + geom_bar(stat="identity",width=3) + ggtitle("Number of countries below median lifeExp for the year")
+
+num_c_by_year
+```
+
+
     Make up your own! Look back at our Class 2 slides for dplyr example ideas with the diamonds dataset, and the package vignettes for other ideas.
 
 Companion graphs
 
 For each table, make sure to include a relevant figure. One tip for starting is to draw out on paper what you want your x- and y-axis to be first and what your geom is; that is, start by drawing the plot you want ggplot to give you. Your figure does not have to depict every single number present in the table. Use your judgement. It just needs to complement the table, add context, and allow for some sanity checking.
 
+further examining distribution of lifeExp accross continents
+```{r}
+max_min_sum <- gapminder %>% group_by(continent) %>% summarize(LE_skewness=moments::skewness(lifeExp))
+continent_stack <- max_min_sum %>% melt(id="continent")
+skew <- continent_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = round(value, digits=2)), size = 7) + ggtitle("Life Expectancy Skewness by Continent") + theme(legend.position="bottom")
+max_min_sum
+
+max_min_sum <- gapminder %>% group_by(continent) %>% summarize(LE_kurtosis=moments::kurtosis(lifeExp))
+continent_stack <- max_min_sum %>% melt(id="continent")
+kurt <- continent_stack %>% ggplot(aes(x=continent, y=value, fill=variable)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = round(value, digits=2)), size = 7) + ggtitle("Life Expectancy Kurtosis by Continent") + theme(legend.position="bottom")
+max_min_sum
+
+multiplot(skew,kurt,cols=2)
+```
+
+
 Notice which figures are easy/hard to make, and whether the visualization adds clarity, detracts from, or is completely redundant (and therefore probably unnecessary) with respect to the tabular display.
 
+The two most time-consuming plots / tables to generate involved 
+1. ordering bars by a value other than their label (ordering countries by min life exp)
+2. grouping items into a variable by condition (counting countries w < median life exp)
+
 Report your process
+
+1. consider how a table or plot should look
+2. review documentation on https://rpubs.com/bradleyboehmke/data_wrangling
+3. guess at what to do based on prior knowledge
+4. google frantically (typically landing somewhere on stackoverflow.com or rpubs.com)
+5. apply lessons learned from forums to my current problem
+6. wrangle my data into a sufficient-looking table
+7. repeat steps 3-5 to produce plot
 
 You're encouraged to reflect on what was hard/easy, problems you solved, helpful tutorials you read, etc.
