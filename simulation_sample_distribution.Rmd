@@ -1,0 +1,174 @@
+---
+title: "simulating_sample_dist"
+output: pdf_document
+author: Joshua Burkhart
+---
+
+Simulating Sample Distributions
+===============================
+
+Warm-up
+-------
+
+```{r}
+curve(dnorm(x, 100, 15), from = 50, to = 150, col = "dodgerblue", lwd = 2, ylab = "density", 
+    main = "Population, N(100, 15)")
+```
+
+```{r}
+set.seed(12345)
+norm_1samp <- rnorm(25, 100, 15)
+```
+
+```{r}
+hist(norm_1samp, breaks = 5)
+```
+
+```{r}
+mean(norm_1samp)  # sample mean, xbar
+```
+
+```{r}
+sd(norm_1samp)  # sample standard deviation, sd
+```
+
+```{r}
+set.seed(12345)
+norm_means_x10 <- numeric(10)  # space for 10 sample means (vector of Os)
+for (i in 1:10) {
+    x <- rnorm(25, 100, 15)  # draw random sample with 25 observations each
+    norm_means_x10[i] <- mean(x)  # compute mean for each ith sample
+}
+norm_means_x10
+```
+
+```{r}
+set.seed(12345)
+norm_means_big <- numeric(1e+05)  # space for 100,000 sample means (vector of Os)
+for (i in 1:1e+05) {
+    x <- rnorm(25, 100, 15)  # draw random sample with 25 observations each
+    norm_means_big[i] <- mean(x)  # compute mean for each ith sample
+}
+# norm_means_big <- replicate(100000, mean(rnorm(25, 100, 15))) # same as
+# above
+```
+
+```{r}
+mean(norm_means_big)  # mean of the sampling distribution of means
+```
+
+```{r}
+sd(norm_means_big)  # sd of the sampling distribution of means (the SEM)
+```
+
+```{r}
+hist(norm_means_big, breaks = 100)
+```
+
+```{r}
+plot(density(norm_means_big), main = "Sampling distribution of means", col = "dodgerblue")
+curve(dnorm(x, 100, 3), col = "red", lty = 2, add = TRUE)
+```
+
+```{r}
+curve(dunif(x, 0, 1), from = -0.5, to = 1.5, xlab = "x", ylab = "f(x)", main = "Uniform(0, 1)")
+```
+
+```{r}
+my.runif <- function(N, mean, sd) {
+    dist <- sqrt(3 * sd^2)
+    runif(N, mean - dist, mean + dist)
+}
+my.dunif <- function(x, mean, sd) {
+    dist <- sqrt(3 * sd^2)
+    dunif(x, mean - dist, mean + dist)
+}
+```
+
+```{r}
+set.seed(12345)
+unif_1sample_big <- my.runif(1e+05, 100, 15)
+mean(unif_1sample_big)
+```
+
+```{r}
+sd(unif_1sample_big)
+```
+
+```{r}
+plot(density(unif_1sample_big))
+```
+
+```{r}
+set.seed(12345)
+unif_1samp_small <- my.runif(3, 100, 15)
+mean(unif_1samp_small)
+```
+
+```{r}
+sd(unif_1samp_small)
+```
+
+```{r}
+hist(unif_1samp_small)
+```
+
+```{r}
+plot(density(unif_1samp_small))
+```
+
+```{r}
+set.seed(12345)
+unif_means_big <- numeric(1e+05)  # space for results (vector of Os)
+for (i in 1:1e+05) {
+    x <- my.runif(3, 100, 15)  # draw random sample with 3 observations each
+    unif_means_big[i] <- mean(x)  # compute mean for each ith sample
+}
+# unif_means_big <- replicate(100000, mean(my.runif(3, 100, 15))) #does same
+# thing as above
+```
+
+```{r}
+mean(unif_means_big)  # mean of the sampling distribution of means
+```
+
+```{r}
+sd(unif_means_big)  # sd of the sampling distribution of means (the SEM)
+```
+
+```{r}
+plot(density(unif_means_big), col = "dodgerblue", lwd = 2, ylim = c(0, 0.045))
+curve(dnorm(x, 100, 15/sqrt(3)), lty = 2, col = "red", add = T)
+```
+
+On your own
+-----------
+
+```{r}
+#this doesn't work
+curve(dunif(x, 100, 15), from = 1, to = 5, xlab = "x", ylab = "f(x)", main = "Uniform(100, 15)")
+```
+
+```{r}
+#lost
+my.runif <- function(N, mean, sd) {
+    dist <- sqrt(3 * sd^2)
+    runif(N, mean - dist, mean + dist)
+}
+```
+
+```{r}
+#this would work if I figured out my.runif
+set.seed(12345)
+unif_1sample_big <- my.runif(100000, 100, 15)
+mean(unif_1sample_big)
+```
+
+```{r}
+sd(unif_1sample_big)
+```
+
+```{r}
+plot(density(unif_1sample_big))
+```
+
