@@ -1,0 +1,108 @@
+---
+title: "hw2"
+output: pdf_document
+author: Joshua Burkhart
+---
+```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/",
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE,
+                      echo = TRUE,
+                      error = TRUE,
+                      fig.width = 11,
+                      comment = NA)
+```
+
+Homework 2: Probability
+=======================
+
+Part 1: Hot Hands
+-----------------
+
+Getting Started
+```{r}
+download.file(
+  "http://www.openintro.org/stat/data/kobe.RData",
+  destfile ="kobe.RData")
+load("kobe.RData")
+head(kobe)
+```
+
+```{r}
+kobe$basket[1:9]
+```
+
+1. What does a streak length of 1 mean, i.e. how many hits and misses are in a streak of 1? What about a streak length of 0?
+> One hit and one miss are in a streak of one.
+  Zero hits and one miss are in a streak of zero.
+
+```{r}
+kobe_streak <- calc_streak(kobe$basket)
+barplot(table(kobe_streak))
+```
+
+2. Describe the distribution of Kobe's streak lengths from the 2009 NBA finals. What was his typical streak length? How long was his longest streak of baskets?
+> Distribution skews up (positive).
+  Most common streak length was zero.
+  Longest streak length was 4
+
+Simulations in R
+```{r}
+outcomes <- c("heads", "tails")
+sample(outcomes, size = 1, replace = TRUE)
+```
+
+```{r}
+sim_fair_coin <- sample(outcomes, size = 100, replace = TRUE)
+```
+
+```{r}
+sim_fair_coin
+table(sim_fair_coin)
+```
+
+```{r}
+sim_unfair_coin <- sample(outcomes,
+                          size = 100,
+                          replace = TRUE,
+                          prob = c(0.2, 0.8))
+```
+
+```{r}
+sim_unfair_coin
+table(sim_unfair_coin)
+```
+
+3. In your simulation of flipping the unfair coin 100 times, how many flips came up heads?
+> 18
+
+```{r}
+?sample
+```
+
+Simulating the Independent Shooter
+```{r}
+outcomes <- c("H", "M")
+sim_basket <- sample(outcomes, size = 1, replace = TRUE)
+```
+
+4. What change needs to be made to the sample function so that it reflects a shooting percentage of 45%? Make this adjustment, then run a simulation to sample 133 shots. Assign the output of this simulation to a new object called sim_basket.
+> The .2, .8 probabilities should be changed to .45, .55
+
+```{r}
+kobe_sim_133 <- sample(outcomes,
+                          size = 100,
+                          replace = TRUE,
+                          prob = c(0.2, 0.8))
+```
+
+
+On your Own
+Comparing Kobe Bryant to the Independent Shooter
+To turn in
+
+Part 2: Probability Exercises
+-----------------------------
+
+To turn in
