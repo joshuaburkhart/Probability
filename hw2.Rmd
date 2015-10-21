@@ -1,7 +1,9 @@
 ---
 title: "hw2"
-output: pdf_document
-author: Joshua Burkhart
+author: "Joshua Burkhart"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
 ---
 ```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
 knitr::opts_chunk$set(fig.path = "Figs/",
@@ -193,8 +195,8 @@ You can turn in your answers to Part 2 with your answers to Part 1 if you choose
   10% must not drink coffee or tea (100 - (25 + 25 + 40))
 
 3. A game in a state lottery selects four numbers from the following set: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, with no number being repeated. How many possible groups of four numbers are there?
-> n! / m!(n - m)! from Theorem 2.3.3 (p. 65)
-  so:
+  $$ \frac{n!}{m!(n-m)!} $$ from Theorem 2.3.3 (p. 65)
+> so:
   10! / 4!(10 - 4)!
   = 10! / 4!6!
   = (10*9*8*7)/(4*3*2*1)
@@ -202,8 +204,8 @@ You can turn in your answers to Part 2 with your answers to Part 1 if you choose
 
 4. A bag of 15 apples contains 2 rotten apples. Four apples are selected at random.
   a. what is the probability that none of the selected apples is rotten?
-> P(A^c) = 1 - P(A) from Property 1 (p. 58)
-  so:
+  $$ P(A^{c}) = 1-P(A)$$ from Property 1 (p. 58)
+> so:
   1 - (P(a1=rotten) +
        P(a2=rotten) +
        P(a3=rotten) +
@@ -213,8 +215,8 @@ You can turn in your answers to Part 2 with your answers to Part 1 if you choose
   = 0.4032967
 
   b. what is the probability that at least one of the selected apples is rotten?
-> P(A^c) = 1 - P(A) from Property 1 (p. 58)
-  so:
+  $$ P(A^{c}) = 1-P(A) $$ from Property 1 (p. 58)
+> so:
   1 - 0.4032967 (result from part a., above)
   = 0.5967033
 
