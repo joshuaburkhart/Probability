@@ -222,15 +222,69 @@ You can turn in your answers to Part 2 with your answers to Part 1 if you choose
 
 5. Give an example of three events A, B, C which are not independent, yet satisfy:
 P(A ∩ B ∩ C) = P(A)P(B)P(C) (Hint: consider simple and extreme cases.)
-
+> Imagine the case where:
+  A = I am my iPhone
+  B = I am designed by Apple in California
+  C = I am assembled in China
+  so:
+  P(A ∩ B ∩ C) = P(A)P(B)P(C)
+  = 0 * ~.99 * ~.99 
+  = 0
+  
 6. A spam filter is designed by looking at commonly occurring phrases in spam. Suppose that 80% of email is spam. In 10% of the spam emails, the phrase "free money" is used, whereas this phrase is only used in 1% of non-spam emails. A new email has just arrived, which does mention "free money". What is the probability that it is spam?
-
+> I = email is spam
+  N = email not spam
+  F = email contains 'free money'
+  P(I) = .8
+  P(N) = 1 - P(I) = .2
+  P(F | I) = .1
+  P(F | N) = .01
+  P(F) = P(N)P(F | N) + P(I)P(F | I) 
+  = .082 from Law of Total Prob.
+  so:
+  P(I | F) = (P(F | I)P(I))/P(F) from Bayes Rule
+  = (.1 * .8)/.082
+  = 0.9756098
 
 7. Propose a probabilty question of your own! The requirements for a good problem are:
   A clearly stated question about random process.
+> The general risk of heart attack during one's lifetime
+  is .2. Genotype 'AG' (mutant) indicates one will have
+  a heart attack sometime in one's life with a probability
+  of .56 and that one cannot be revived. The 'AG' mutant appears
+  in 7% of the population. You have not been genotyped and 
+  are experiencing a heart attack. What is the probability 
+  you have a normal, i.e. non-mutant 'AG' genotype and, therefore,
+  have a chance at surviving?
+
   A clearly defined sample space.
-  A probability function that satisfies the "Axiomatic Definiton of Probability"
-    (p.57 of the textbook)
-  Enough information provided to actually answer the question.
-  A worked out solution!
+> {mutant genotype,have a heart attack in lifetime}
+  {mutant genotype,don't have a heart attack in lifetime}
+  {normal genotype,have a heart attack in lifetime}
+  {normal genotype,don't have a heart attack in lifetime}
+  
+A probability function that satisfies the "Axiomatic Definiton
+of Probability" (p.57 of the textbook)
+Enough information provided to actually answer the question.
+A worked out solution!
+> H = heart attack
+  N = normal genotype
+  M = mutant genotype 'AG'
+  P(M) = .07
+  P(N) = .93
+  P(H) = .2
+  P(H | M) = .56
+  find P(N | H)
+  P(N | H) = P(H | N)P(N) / P(H)
+  but we don't know P(H | N) so we use 
+  
+$$ P(A^{c}) = 1-P(A)$$ from Property 1 (p. 58)
+
+> and find the probability we are a mutant
+  P(N | H) = 1 - P(M | H)
+  1 - P(M | H) = P(H | M)P(M) / P(H)
+  = 1 - (.56 * .07) / .2
+  = 1 - 0.196
+  = 0.804
+  
 If we really like the question then we'll put it on the midterm! We really like interesting math and amusing narratives!
