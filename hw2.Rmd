@@ -141,113 +141,192 @@ To turn in
 You can turn in your answers to Part 2 with your answers to Part 1 if you choose to use Latex within your R markdown file. 
 
 1. A coin is tossed three times and the sequence of heads and tails is recorded.
+
   a. list the sample space.
-> {H,H,H}
-  {H,H,T}
-  {H,T,H}
-  {H,T,T}
-  {T,H,H}
-  {T,H,T}
-  {T,T,H}
-  {T,T,T}
+
+$$
+\begin{aligned}
+   \{H,H,H\} \\
+   \{H,H,T\} \\
+   \{H,T,H\} \\
+   \{H,T,T\} \\
+   \{T,H,H\} \\
+   \{T,H,T\} \\
+   \{T,T,H\} \\
+   \{T,T,T\} \\
+\end{aligned}
+$$
 
   b. list the elements that make up the following events: 
-    (1) A = at least two heads; 
->   {H,H,H}
-    {H,H,T}
-    {H,T,H}
-    {T,H,H}
+  
+  (1) A = at least two heads; 
+
+$$ 
+\begin{aligned}
+    \{H,H,H\} \\
+    \{H,H,T\} \\
+    \{H,T,H\} \\
+    \{T,H,H\} \\
+\end{aligned}
+$$
 
     (2) B = the first two tosses are heads; 
->   {H,H,H}
-    {H,H,T}
+
+$$  
+\begin{aligned}
+    \{H,H,H\} \\
+    \{H,H,T\} \\
+\end{aligned}
+$$
     
     (3) C = the last toss is a tail.
->   {H,H,T}
-    {H,T,T}
-    {T,H,T}
-    {T,T,T}
+
+$$  
+\begin{aligned}
+    \{H,H,T\} \\
+    \{H,T,T\} \\
+    \{T,H,T\} \\
+    \{T,T,T\} \\
+\end{aligned}
+$$
     
   c. List the elements of the following events: 
     (1) complement of A, 
->   {T,T,T}
-    {T,T,H}
-    {T,H,T}
-    {H,T,T}
+
+$$  
+\begin{aligned}
+    \{T,T,T\} \\
+    \{T,T,H\} \\
+    \{T,H,T\} \\
+    \{H,T,T\} \\
+\end{aligned}
+$$
     
     (2) A ∩ B, 
->   {H,H,H}
-    {H,H,T}
+
+$$ 
+\begin{aligned}
+    \{H,H,H\} \\
+    \{H,H,T\} \\
+\end{aligned}
+$$
  
     (3) A ∪ C.
->   {H,H,H}
-    {H,H,T}
-    {H,T,H}
-    {T,H,H}
-    {H,T,T}
-    {T,H,T}
-    {T,T,T}
+
+$$  
+\begin{aligned}
+    \{H,H,H\} \\
+    \{H,H,T\} \\
+    \{H,T,H\} \\
+    \{T,H,H\} \\
+    \{H,T,T\} \\
+    \{T,H,T\} \\
+    \{T,T,T\} \\
+\end{aligned}
+$$
     
 2. In a city, 65% of people drink coffee, 50% drink tea, and 25% drink both. What is the probability that a person chosen at random will drink at least one of coffee or tea? Will drink neither?
-> 25% drink both coffee and tea
-  25% must drink coffee only (50 - 25)
-  40% must drink tea only (65 - 25)
-  10% must not drink coffee or tea (100 - (25 + 25 + 40))
+
+> 25% drink both coffee and tea  
+  25% must drink coffee only (50 - 25)  
+  40% must drink tea only (65 - 25)  
+  10% must not drink coffee or tea (100 - (25 + 25 + 40))  
 
 3. A game in a state lottery selects four numbers from the following set: {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, with no number being repeated. How many possible groups of four numbers are there?
-  $$ \frac{n!}{m!(n-m)!} $$ from Theorem 2.3.3 (p. 65)
-> so:
-  10! / 4!(10 - 4)!
-  = 10! / 4!6!
-  = (10*9*8*7)/(4*3*2*1)
-  = 210
+
+> Assuming order doesn't matter, as in Powerball  
+  (http://www.powerball.com/powerball/pb_howtoplay.asp)  
+
+$$
+  \frac{n!}{m!(n-m)!} \textrm{ from Theorem 2.3.3 (p. 65)}
+$$
+
+$$
+\begin{aligned}
+  \frac{10!}{4!(10 - 4)!} \\
+   = \frac{10!}{4!6!} \\
+   = \frac{10\times9\times8\times7}{4\times3\times2\times1} \\
+   = 210 \\
+\end{aligned}
+$$
 
 4. A bag of 15 apples contains 2 rotten apples. Four apples are selected at random.
   a. what is the probability that none of the selected apples is rotten?
-  $$ P(A^{c}) = 1-P(A)$$ from Property 1 (p. 58)
-> so:
-  1 - (P(a1=rotten) +
-       P(a2=rotten) +
-       P(a3=rotten) +
-       P(a4=rotten))
-  = 1 - (2/15 + 2/14 + 2/13 + 2/12)
-  = 1 - 0.5967033
-  = 0.4032967
+  
+$$ 
+  P(A^{c}) = 1-P(A) \textrm{ from Property 1 (p. 58)}
+$$
+
+$$  
+\begin{aligned}
+    1 - (P(a1=rotten) + \\
+         P(a2=rotten) + \\
+         P(a3=rotten) + \\
+         P(a4=rotten)) \\
+    = 1 - (\frac{2}{15} + \frac{2}{14} + \frac{2}{13} + \frac{2}{12}) \\
+    = 1 - 0.5967033 \\
+    = 0.4032967 \\
+\end{aligned}
+$$
 
   b. what is the probability that at least one of the selected apples is rotten?
-  $$ P(A^{c}) = 1-P(A) $$ from Property 1 (p. 58)
-> so:
-  1 - 0.4032967 (result from part a., above)
-  = 0.5967033
+
+$$
+  P(A^{c}) = 1-P(A) \textrm{ from Property 1 (p. 58)}
+$$
+
+$$
+\begin{aligned}
+   1 - 0.4032967 \textrm{ (result from part a., above)} \\
+   = 0.5967033 \\
+\end{aligned}
+$$
 
 5. Give an example of three events A, B, C which are not independent, yet satisfy:
 P(A ∩ B ∩ C) = P(A)P(B)P(C) (Hint: consider simple and extreme cases.)
-> Imagine the case where:
-  A = I am my iPhone
-  B = I am designed by Apple in California
-  C = I am assembled in China
-  so:
-  P(A ∩ B ∩ C) = P(A)P(B)P(C)
-  = 0 * ~.99 * ~.99 
-  = 0
+
+> Imagine the case where:  
+  A = I am my iPhone  
+  B = I am designed by Apple in California  
+  C = I am assembled in China  
+   
+$$
+\begin{aligned}
+   P(A ∩ B ∩ C) = P(A)P(B)P(C) \\
+   = 0\times~.99\times~.99 \\
+   = 0 \\
+\end{aligned}
+$$
   
 6. A spam filter is designed by looking at commonly occurring phrases in spam. Suppose that 80% of email is spam. In 10% of the spam emails, the phrase "free money" is used, whereas this phrase is only used in 1% of non-spam emails. A new email has just arrived, which does mention "free money". What is the probability that it is spam?
-> I = email is spam
+
+> I = email is spam  
   N = email not spam
   F = email contains 'free money'
-  P(I) = .8
-  P(N) = 1 - P(I) = .2
-  P(F | I) = .1
-  P(F | N) = .01
-  P(F) = P(N)P(F | N) + P(I)P(F | I) 
-  = .082 from Law of Total Prob.
-  so:
-  P(I | F) = (P(F | I)P(I))/P(F) from Bayes Rule
-  = (.1 * .8)/.082
-  = 0.9756098
+
+$$
+\begin{aligned}
+  P(I) = .8 \\
+  P(N) = 1 - P(I) = .2 \\
+  P(F | I) = .1 \\
+  P(F | N) = .01 \\
+  P(F) = P(N)P(F | N) + P(I)P(F | I) \textrm{ from Law of Total Prob.} \\
+  = .2\times.01 + .8\times.1 \\
+  = .082  \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+   P(I | F) = \frac{P(F | I)P(I)}{P(F)} \textrm{ from Bayes Rule} \\
+   = \frac{.1\times.8}{.082} \\
+   = 0.9756098 \\
+\end{aligned}
+$$
 
 7. Propose a probabilty question of your own! The requirements for a good problem are:
   A clearly stated question about random process.
+
 > The general risk of heart attack during one's lifetime
   is .2. Genotype 'AG' (mutant) indicates one will have
   a heart attack sometime in one's life with a probability
@@ -258,33 +337,56 @@ P(A ∩ B ∩ C) = P(A)P(B)P(C) (Hint: consider simple and extreme cases.)
   have a chance at surviving?
 
   A clearly defined sample space.
-> {mutant genotype,have a heart attack in lifetime}
-  {mutant genotype,don't have a heart attack in lifetime}
-  {normal genotype,have a heart attack in lifetime}
-  {normal genotype,don't have a heart attack in lifetime}
+
+$$ 
+\begin{aligned}
+   \{\textrm{mutant genotype, have a heart attack in lifetime}\} \\
+   \{\textrm{mutant genotype, don't have a heart attack in lifetime}\} \\
+   \{\textrm{normal genotype, have a heart attack in lifetime}\} \\
+   \{\textrm{normal genotype, don't have a heart attack in lifetime}\} \\
+\end{aligned}
+$$
   
 A probability function that satisfies the "Axiomatic Definiton
 of Probability" (p.57 of the textbook)
 Enough information provided to actually answer the question.
 A worked out solution!
-> H = heart attack
-  N = normal genotype
-  M = mutant genotype 'AG'
-  P(M) = .07
-  P(N) = .93
-  P(H) = .2
-  P(H | M) = .56
-  find P(N | H)
-  P(N | H) = P(H | N)P(N) / P(H)
-  but we don't know P(H | N) so we use 
+
+> H = heart attack  
+  N = normal genotype  
+  M = mutant genotype 'AG'  
+
+$$
+\begin{aligned}
+   P(M) = .07 \\
+   P(N) = .93 \\
+   P(H) = .2 \\
+   P(H | M) = .56 \\
+\end{aligned}
+$$
+
+> we'd like to find P(N | H)
+
+$$
+  P(N | H) = \frac{P(H | N)P(N)}{P(H)}
+$$
   
-$$ P(A^{c}) = 1-P(A)$$ from Property 1 (p. 58)
+> but we don't know P(H | N) so we use
+  
+$$
+  P(A^{c}) = 1-P(A) \textrm{ from Property 1 (p. 58)}
+$$
 
 > and find the probability we are a mutant
-  P(N | H) = 1 - P(M | H)
-  1 - P(M | H) = P(H | M)P(M) / P(H)
-  = 1 - (.56 * .07) / .2
-  = 1 - 0.196
-  = 0.804
+
+$$
+\begin{aligned}
+   P(N | H) = 1 - P(M | H) \\
+   1 - P(M | H) = \frac{P(H | M)P(M)}{P(H)} \\
+   = 1 - \frac{.56\times.07}{.2} \\
+   = 1 - 0.196 \\
+   = 0.804 \\
+\end{aligned}
+$$
   
 If we really like the question then we'll put it on the midterm! We really like interesting math and amusing narratives!
