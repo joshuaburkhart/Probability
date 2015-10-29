@@ -1,0 +1,142 @@
+---
+title: "midterm"
+author: "Joshua Burkhart"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/",
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE,
+                      echo = TRUE,
+                      error = TRUE,
+                      fig.width = 11,
+                      comment = NA)
+```
+
+Midterm: Simple Linear Regression
+=================================
+
+Overview
+--------
+```{r}
+library(plyr) #this must be loaded before dplyr 
+library(dplyr)
+library(ggplot2)
+library(broom)
+```
+
+```{r}
+library(Lahman)
+?Lahman
+```
+
+```{r}
+Teams <- Lahman::Teams
+Salaries <- Lahman::Salaries
+```
+
+HLO Lahman
+----------
+
+```{r}
+str(Teams)
+str(Salaries)
+glimpse(Teams)
+glimpse(Salaries)
+head(Teams)
+head(Salaries)
+tail(Teams)
+tail(Salaries)
+names(Teams)
+names(Salaries)
+ncol(Teams)
+ncol(Salaries)
+length(Teams)
+length(Salaries)
+head(rownames(Teams))
+head(rownames(Salaries))
+dim(Teams)
+dim(Salaries)
+nrow(Teams)
+nrow(Salaries)
+summary(Teams)
+summary(Salaries)
+?Teams
+?Salaries
+```
+
+Are they data.frames, matrices, vectors, lists?
+
+> data.frames  
+
+What is the unit of analysis in the dataset?
+
+> Teams: Yearly statistics and standings for teams.  
+  Salaries: Player salary data.  
+
+How many variables/columns?
+
+> Teams: 48  
+  Salaries: 5  
+
+How many rows/observations?
+
+> Teams: 2775  
+  Salaries: 24758  
+
+Find the variables for games won, team, year, and salary.
+
+> W: Wins  
+  teamID: Team; a factor  
+  yearID: Year  
+  salary: Salary  
+
+Which variables are continuous?
+
+> In theory, salary could be continuous but in practice, salary looks like it's rounded to the nearest thousand.  
+
+Which variables are discrete?
+
+> W  
+  teamID  
+  yearID  
+  salary  
+
+Which variables are categorical?
+
+> teamID  
+
+How many levels do they have?
+
+> 149  
+
+What about missing data for any variables?
+
+```{r}
+unique(is.na(Teams))
+unique(is.na(Salaries))
+```
+
+> Teams: Missing data in several columns  
+  Salaries: No missing data reported  
+  
+Data wrangling in dplyr
+-----------------------
+
+Univariate EDA (+ more wrangling)
+---------------------------------
+
+Bivariate EDA (+ even more wrangling)
+-------------------------------------
+
+Regression model
+----------------
+
+Wrap-up
+-------
+
+
+  
