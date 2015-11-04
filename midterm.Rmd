@@ -126,6 +126,46 @@ unique(is.na(Salaries))
 Data wrangling in dplyr
 -----------------------
 
+Create a new dataset that includes total yearly payroll for each team in the Salaries dataframe.
+
+```{r}
+typ <- Salaries %>% group_by(yearID,teamID) %>% summarise(payroll = sum(salary))
+head(typ)
+```
+
+Add this payroll column to the Teams dataframe.
+
+```{r}
+tpay <- inner_join(Teams,typ,c("yearID","teamID"))
+head(tpay)
+```
+
+We'll focus on the years 2000 - 2014. Use dplyr to filter() the dataset you created with the Teams data plus the payroll column for just those years.
+
+```{r}
+recent_tpay <- filter(tpay, yearID >= 2000, yearID <= 2014)
+```
+
+Gift
+```{r}
+bat_stats <- battingStats(data = Lahman::Batting, idvars = c("playerID", "yearID", "stint", "teamID", "lgID"), cbind = TRUE)
+```
+
+Write a dplyr expression to create a new dataframe that contains means for each of these three new variables for each team and year from 2000 - 2014 (rather than for each player). 
+
+```{r}
+bat_avgs <- bat_stats %>% filter(yearID >= 2000, yearID <= 2014) %>% group_by(yearID,teamID) %>% summarise(ob_perc = mean(OBP,na.rm = TRUE),slug_perc = mean(SlugPct,na.rm = TRUE),ops = mean(OPS,na.rm = TRUE))
+head(bat_avgs)
+```
+
+Adds these new batting statistic columns to your current dataframe
+
+```{r}
+tpay <- inner_join(bat_avgs,typ,c("yearID","teamID"))
+head(tpay)
+```
+
+
 Univariate EDA (+ more wrangling)
 ---------------------------------
 
