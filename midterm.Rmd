@@ -136,14 +136,14 @@ head(typ)
 Add this payroll column to the Teams dataframe.
 
 ```{r}
-tpay <- inner_join(Teams,typ,c("yearID","teamID"))
-head(tpay)
+teams_pay <- inner_join(Teams,typ,c("yearID","teamID"))
+head(teams_pay)
 ```
 
 We'll focus on the years 2000 - 2014. Use dplyr to filter() the dataset you created with the Teams data plus the payroll column for just those years.
 
 ```{r}
-recent_tpay <- filter(tpay, yearID >= 2000, yearID <= 2014)
+recent_tpay <- filter(teams_pay, yearID >= 2000, yearID <= 2014)
 ```
 
 Gift
@@ -161,13 +161,165 @@ head(bat_avgs)
 Adds these new batting statistic columns to your current dataframe
 
 ```{r}
-tpay <- inner_join(bat_avgs,typ,c("yearID","teamID"))
-head(tpay)
+# warning seems ok based on http://goo.gl/9QH3fo
+teams_bat <- inner_join(bat_avgs,recent_tpay,c("yearID","teamID"))
+head(teams_bat)
 ```
-
 
 Univariate EDA (+ more wrangling)
 ---------------------------------
+
+```{r}
+teams_bat %>%
+  group_by(teamID) %>%
+  tally() %>% arrange(n) %>%
+  print(n = 33) 
+```
+
+How many teams are there?
+
+> 33  
+
+Which teams have data for the least number of seasons?
+
+> MIA, ANA, and MON 
+
+Which have the most seasons?
+
+> ARI,ATL,BAL,BOS,CHA,CHN,CIN,CLE,COL,  
+  DET,HOU,KCA,LAN,MIL,MIN,NYA,NYN,OAK,  
+  PHI,PIT,SDN,SEA,SFN,SLN,TBA,TEX,TOR all have 15  
+
+```{r}
+teams_bat <- teams_bat %>%
+  filter(!(teamID %in% c("ANA", "MIA", "MON"))) # you should understand what this does
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(G) %>%
+  summarise_each(funs(min,max,mean,median))
+```
+
+Is there a lot of variability in number of games played per season across teams?
+
+> No  
+
+What is the range of games played by teams per season?
+
+> 2 (163 - 161)
+
+Number of games won
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(W) %>%
+  summarise_each(funs(min,max)) %>% head()
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(W) %>%
+  summarise_each(funs(min,max)) %>% ggplot() +
+  geom_smooth(aes(x=yearID,y=min),color="orange") +
+  geom_smooth(aes(x=yearID,y=max),color="purple")
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(W) %>%
+  summarise_each(funs(min,max)) %>% ggplot() +
+  geom_histogram(aes(min,y=..density..),color="orange") +
+  geom_density(aes(min),color="orange") +
+  geom_histogram(aes(max,y=..density..),color="purple") +
+  geom_density(aes(max),color="purple")
+```
+
+Mean on-base percentage
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc) %>%
+  summarise_each(funs(mean)) %>% head()
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_smooth(aes(x=yearID,y=ob_perc),color="green")
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_histogram(aes(ob_perc,y=..density..),color="green",binwidth=0.008) +
+  geom_density(aes(ob_perc),color="green")
+```
+
+Mean slugging percentage
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(slug_perc) %>%
+  summarise_each(funs(mean)) %>% head()
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_smooth(aes(x=yearID,y=slug_perc),color="red")
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_histogram(aes(slug_perc,y=..density..),color="red",binwidth=0.008) +
+  geom_density(aes(slug_perc),color="red")
+```
+
+Mean on-base percentage + slugging
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% head()
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_smooth(aes(x=yearID,y=ob_perc),color="green") +
+  geom_smooth(aes(x=yearID,y=slug_perc),color="red") +
+  geom_smooth(aes(x=yearID,y=(slug_perc - ob_perc)),color="blue")
+```
+
+```{r}
+teams_bat %>%
+  group_by(yearID) %>%
+  select(ob_perc,slug_perc) %>%
+  summarise_each(funs(mean)) %>% ggplot() +
+  geom_histogram(aes(ob_perc,y=..density..),color="green",binwidth=0.008) +
+  geom_density(aes(ob_perc),color="green") +
+  geom_histogram(aes(slug_perc,y=..density..),color="red",binwidth=0.008) +
+  geom_density(aes(slug_perc),color="red")
+```
 
 Bivariate EDA (+ even more wrangling)
 -------------------------------------
