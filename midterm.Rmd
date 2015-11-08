@@ -441,7 +441,7 @@ teams_anl %>% lm(avg_w_cnt ~ avg_z_pay,.) %>% summary()
 Use both the plot and the correlation statistics to evaluate (in words) the form (does the relationship look linear?) and strength of the association between these two variables.
 
 > The form looks as if it can be approximated by a linear
-model. The correlation is slight (Adj. R-squared = 0.4587)
+model. The correlation is slight (R-squared = 0.4773283)
 but significant (p-value: 2.375e-05).  
 
 Would you be comfortable using a linear model to predict the mean number of wins in a given season given their average relative payroll for that season?
@@ -471,8 +471,126 @@ What are the total, model, and residual sums of squares for this simple linear r
 
 What percent of the variation in mean wins is "explained" by variation in mean payroll z-scores?
 
-> 45.87% (using Adj. R-squared)
+> 47.73283% (R-squared)
 
+Write up a summary of your findings.
+
+> The results indicate that payroll predicted wins
+(b1 = 5.0438), with 47.73283% of the variance in wins
+accounted for by payroll levels. Each standard
+deviation payroll was from the annual mean was 
+associated with an increase of 5.0434 wins. The OLS
+regression equation for predicting wins is of the form
+
+$$
+  \textrm{wins}_{i} = 81.1713 + 5.0438\textrm{standard deviations from mean payroll}_{i} + \epsilon_{i}
+$$
+
+What is the average of all ŷ i values (in any simple linear regression model) equal to? 
+
+> The mean response (intercept).
+
+What is the variance of the residuals in your regression model?
+
+> 19.79
+
+The standard error?
+
+> 4.449
+
+Compare the variance of the residuals to sample variance of mean wins overall, and to your model R2.
+
+> variance of residuals: 19.79
+  variance of mean wins overall: 36.55798
+  R-squared: 0.4773
+  Adj. R-squared = 0.4587
+  
+$$
+  1-\frac{19.79}{36.55798}\approx 0.4587
+$$
+
+How are these three statistics related (in any simple linear regression model)?
+
+$$
+  1-\frac{\textrm{variance of residuals}}{\textrm{variance of mean wins overall}}=\textrm{Adj. R-squared}
+$$
+
+Obviously, the book and movie about the Oakland A's suggests that this team may be an outlier in terms of the predicting wins from payroll. Look specifically at this team: 
+
+What is the observed number of mean wins?
+
+```{r}
+teams_anl %>% filter(teamID == "OAK")
+```
+
+> 88.2
+
+What is the predicted?
+
+$$
+  81.1713 + 5.0438\times -0.7910688\approx 77.18
+$$
+
+What is the residual?
+
+$$
+  88.2 - 77.18 = 11.02
+$$
+
+How many standard deviations above/below the residual mean is the Oakland A's residual value?
+
+```{r}
+augment(teams_anl_lm) %>% filter(avg_w_cnt == 88.2)
+```
+
+> 2.56 above
+
+Are there any other teams with a residual value as extreme or more extreme than the Oakland A's?
+
+```{r}
+augment(teams_anl_lm) %>% arrange(.std.resid) %>% tail()
+```
+
+> No. The next highest is SLN (St. Louis Cardinals) with 1.92
+
+Create a bootstrap distribution for the correlation and the regression coefficients. Copy and paste the following code into your file, and annotate each line with a # to (briefly) explain what each line of code is doing.
+
+```{r}
+N <- 10^4 # storing 10000 as N
+cor.boot <- numeric(N) # store vector of size 10000 as cor.boot
+int.boot <- numeric(N) # store vector of size 10000 as int.boot
+slope.boot <- numeric(N) # store vector of size 10000 as slope.boot
+n <- # number of observations here
+for (i in 1:N){ # loop 10000 times, storing loop iteration as i
+    index <- sample(n, replace = TRUE) # store a vector of size n with values ranging from 1 to n as index
+    team.boot <- teams_anl[index, ] # resampled data
+    cor.boot[i] <- cor(team.boot$avg_z_pay, team.boot$avg_w_cnt) # what is x and y? The input & response variables, avg_z_pay and avg_w_cnt
+    # recalculate linear model estimates
+    team.boot.lm <- lm(avg_w_cnt ~ avg_z_pay, data = team.boot) # what is x and y?
+    int.boot[i] <- coef(team.boot.lm)[1] # new intercept
+    slope.boot[i] <- coef(team.boot.lm)[2] # new slope
+  }
+
+mean(cor.boot) #mean correlation of bootstrapped data
+sd(cor.boot) #standard deviation of correlation of bootstrapped data
+quantile(cor.boot, c(.025, .975)) #95% CI of correlation of bootstrapped data
+
+hist(cor.boot) #create histogram of correlation of bootstrapped data
+observed <- cor(teams_anl$avg_z_pay, teams_anl$avg_w_cnt) # what is x and y? The input & response variables avg_z_pay and avg_w_cnt
+abline(v = observed, col = "red") # add line at original sample correlation
+# do the same as above for slope.boot (don't worry about int.boot)
+mean(slope.boot) #mean slope of bootstrapped data
+sd(slope.boot) #standard deviation of slope of bootstrapped data
+quantile(slope.boot, c(.025, .975)) #95% CI of slope of bootstrapped data
+
+hist(slope.boot) #create histogram of slope of bootstrapped data
+observed <- summary(teams_anl_lm)$coefficients[2] # what is x and y? The input & response variables avg_z_pay and avg_w_cnt
+abline(v = observed, col = "red") # add line at original sample slope
+```
+
+Figure out how many bootstrap samples had a higher correlation than the one you observed as your original sample correlation.
+
+How many bootstrap samples had a higher slope coefficient than the one you observed.
 
 Wrap-up
 -------
