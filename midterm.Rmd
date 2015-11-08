@@ -208,7 +208,7 @@ Is there a lot of variability in number of games played per season across teams?
 
 What is the range of games played by teams per season?
 
-> 2 (163 - 161)
+> 2 (163 - 161)  
 
 Number of games won
 
@@ -324,8 +324,155 @@ teams_bat %>%
 Bivariate EDA (+ even more wrangling)
 -------------------------------------
 
+Use ggplot2 to create a scatterplot showing payroll (x-axis) and wins (y-axis) across all time periods and teams.
+
+```{r}
+teams_pay %>% select(payroll,W) %>% ggplot() +
+  geom_point(aes(x=payroll/1000,y=W)) + geom_smooth(aes(x=payroll/1000,y=W),method="lm")
+```
+
+One variable we are not accounting for in this scatterplot is year. It is possible that payrolls increase from season to season. Check this out using the same ggplot code you just used above, but make this plot with year on the x-axis and payroll/1000 on the y-axis.
+
+```{r}
+teams_pay %>% select(yearID,payroll) %>% ggplot() +
+  geom_point(aes(x=yearID,y=payroll/1000)) + geom_smooth(aes(x=yearID,y=payroll/1000),method="lm")
+```
+
+A scatterplot may not be the best way to look at this pattern, since year is a discrete variable. So also try making boxplots stratified by yearID.
+
+```{r}
+teams_pay %>% select(yearID,payroll) %>% ggplot() +
+  geom_boxplot(aes(x=factor(yearID),y=payroll/1000))
+```
+
+Create new variables for the average payroll and the standard deviation of payrolls each year across teams and add them to your dataframe.
+
+```{r}
+teams_bat <- teams_bat %>% group_by(yearID) %>% 
+  mutate(avg_pay = mean(payroll),
+         std_pay = sd(payroll))
+```
+
+Add another variable to your dataset that is the z-score for each team for each year.
+
+```{r}
+teams_bat <- teams_bat %>% group_by(yearID) %>% 
+  mutate(z_pay = (payroll - avg_pay) / std_pay)
+```
+
+Make a scatterplot in ggplot with year on the x-axis and payroll z-scores on the y-axis and two geoms: geom_point() and geom_smooth(method = "lm").
+
+```{r}
+teams_bat %>% select(yearID,z_pay) %>% ggplot() +     geom_point(aes(x=yearID,y=z_pay)) + geom_smooth(aes(x=yearID,y=z_pay),method="lm")
+```
+
+What do you see? 
+
+> I see a scatter plot centered about y = 0 with a
+z_pay spread that looks similar across year.
+
+How is this plot different from the previous one with payroll/1000 on the y-axis (from #12)?
+
+> The other plot showed payroll/1000 increasing
+with year. This plot shows z_pay steady across year
+(which, of course, makes perfect sense as it's 
+relative to each year's mean payroll)
+
+Make a new scatterplot (minus geom_smooth) in ggplot with year on the x-axis and payroll z-scores on the y-axis. This time, add an additional aesthetic to colour the points in the scatterplot with a different color for each teamID, and an additional geom called geom_line().
+
+```{r}
+teams_bat %>% select(yearID,z_pay,teamID) %>% ggplot() +     geom_point(aes(x=yearID,y=z_pay)) + geom_line(aes(x=yearID,y=z_pay,color=factor(teamID)))
+```
+
+What do you see? 
+
+> I see points indicating team payroll by year 
+connected by colored lines indicating teamID.
+
+What is not surprising here?
+
+> Teams tend to move only slightly (relative 
+to each other) each year. Teams at the top 
+tend to stay toward the top, teams on the bottom tend
+to stay toward the bottom.
+
+Use dplyr to create a new dataset ... that includes two new variables: average payroll z-score and average number of wins. Both averages should be calculated for each team across all seasons.
+
+```{r}
+teams_anl <- teams_bat %>%
+  group_by(teamID) %>%
+  summarise(avg_z_pay = mean(z_pay,na.rm=TRUE),
+  avg_w_cnt = mean(W,na.rm=TRUE))
+```
+
+What will be the mean and standard deviation of this new variable across the 30 teams?
+
+> mean: This will be the mean distance of the annual payroll from the annual mean payroll across teams.  
+
+> sd: This will be the spread of the distance
+of the annual payroll from the annual mean
+payroll across teams.  
+
+That is, is your new average payroll z-score also a z-score?
+
+> yes  
+
+Are you surprised?
+
+> Not too surprised.
+
+Why or why not?
+
+> If I think about a z-score has having a unit, z-scoreness?, it makes sense to me that an 
+average of z-scores keeps its z-scoreness.  
+
+Now create a scatterplot to see the association between average payroll z-scores (x-axis) and average number of wins (y-axis).
+
+```{r}
+teams_anl %>% ggplot() +
+  geom_point(aes(x=avg_z_pay,y=avg_w_cnt)) +
+  geom_smooth(aes(x=avg_z_pay,y=avg_w_cnt),method="lm")
+```
+
+```{r}
+teams_anl %>% lm(avg_w_cnt ~ avg_z_pay,.) %>% summary()
+```
+
+Use both the plot and the correlation statistics to evaluate (in words) the form (does the relationship look linear?) and strength of the association between these two variables.
+
+> The form looks as if it can be approximated by a linear
+model. The correlation is slight (Adj. R-squared = 0.4587)
+but significant (p-value: 2.375e-05).  
+
+Would you be comfortable using a linear model to predict the mean number of wins in a given season given their average relative payroll for that season?
+
+> Given such a low R-squared, I'd be hesitant to
+predict the exact number of wins, though with such a
+low p-value, I might be comfortable making more general
+predictions, like predicting the mean number of wins is
+within some range etc.
+
 Regression model
 ----------------
+
+Build a simple linear regression model predicting mean wins from mean payroll z-scores across seasons.
+
+```{r}
+teams_anl_lm <- teams_anl %>% lm(avg_w_cnt ~ avg_z_pay,.)
+teams_anl_lm %>% anova()
+teams_anl_lm %>% summary()
+teams_anl_lm %>% glance()
+```
+
+What are the total, model, and residual sums of squares for this simple linear regression?
+
+> model: 506.05
+  residual: 554.13
+
+What percent of the variation in mean wins is "explained" by variation in mean payroll z-scores?
+
+> 45.87% (using Adj. R-squared)
+
 
 Wrap-up
 -------
