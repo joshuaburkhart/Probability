@@ -738,3 +738,131 @@ $$
 And in general in any simple linear regression model?
 
 > R-squared is the square of the correlation.  
+
+Midterm: Exercises
+==================
+
+Part 2: Sampling Distributions
+------------------------------
+
+Examine the behavior of a lognormal random variable with
+parameters 0.2938933 and 1.268636.
+
+```{r}
+set.seed(12345)
+logn_1samp <- rlnorm(1e+07, 0.2938933, 1.268636)
+mean(logn_1samp)
+sd(logn_1samp)
+```
+
+Transform this variable linearly so that we have a new
+variable Y mean of 100 and a standard deviation of 15.
+
+```{r}
+set.seed(12345)
+logn_1samp <- 2.5 * rlnorm(1e+07, 0.2938933, 1.268636) + 92.5
+mean(logn_1samp)
+sd(logn_1samp)
+```
+
+Take 100,000 means based on samples of size 25 from the
+transformed lognormal distribution.
+
+```{r}
+set.seed(12345)
+N = 100000
+logn_means <- numeric(N)
+for (i in 1:N) {
+    x <- 2.5 * rlnorm(25, 0.2938933, 1.268636) + 92.5
+    logn_means[i] <- mean(x)
+}
+head(logn_means)
+```
+
+Examine the population, sample, and sampling distributions.
+
+```{r}
+logn_means %>% hist(breaks=100,main="Smp. Dist. of logn Means")
+```
+
+```{r}
+plot(density(logn_means),main="Smp. Dist. of logn Means")
+```
+
+What did you expect to see?
+
+> I suppose I expected the means to be evenly distributed
+above and below 100.
+
+What do you actually see?
+
+> A high peak around 100 with a long tail to the right.
+
+What is the mean/standard deviation of this simulated 
+sampling distribution?
+
+```{r}
+mean(logn_means)
+sd(logn_means)
+```
+
+> mean: 100.0029
+  sd: 3.023481, odd. didn't we transform this to 15?
+
+Do the same for an exponential distribution with mean
+and standard deviation of 1.
+
+```{r}
+set.seed(12345)
+exp_1samp <- rexp(1e+07,1)
+mean(exp_1samp)
+sd(exp_1samp)
+```
+
+```{r}
+set.seed(12345)
+exp_1samp <- 15 * rexp(1e+07,1) + 92.5
+mean(exp_1samp)
+sd(exp_1samp)
+```
+
+```{r}
+set.seed(12345)
+N = 100000
+exp_means <- numeric(N)
+for (i in 1:N) {
+    x <- 15 * rexp(25, 1) + 85 #transform so mean = 100, sd = 15
+    exp_means[i] <- mean(x)
+}
+head(exp_means)
+```
+
+```{r}
+exp_means %>% hist(breaks=100,main="Smp. Dist. of exp Means")
+```
+
+```{r}
+plot(density(exp_means),main="Smp. Dist. of exp Means")
+```
+
+```{r}
+mean(exp_means)
+sd(exp_means)
+```
+
+> This distribution has a longer tail on the right than
+on the left but is not as extreme as the lognormal
+distribution. The sd looks like it's near 3, just like the
+lognormal distribution above, though it was transformed.
+
+Overall, what conclusions do you make about the applicability of the Central Limit Theorem given what we have demonstrated with variables from: 
+
+The binomial distribution (in class).
+The normal distribution (warm-up).
+The uniform distribution (warm-up).
+The lognormal (on your own).
+The exponential (on your own).
+
+> With enough iterations, sample distributions for
+each of the above distributions converge to the same
+distribution: the normal distribution.
