@@ -438,15 +438,19 @@ teams_anl %>% ggplot() +
 teams_anl %>% lm(avg_w_cnt ~ avg_z_pay,.) %>% summary()
 ```
 
+```{r}
+cor(teams_anl$avg_z_pay,teams_anl$avg_w_cnt)
+```
+
 Use both the plot and the correlation statistics to evaluate (in words) the form (does the relationship look linear?) and strength of the association between these two variables.
 
 > The form looks as if it can be approximated by a linear
-model. The correlation is slight (R-squared = 0.4773283)
+model. The correlation is slight (cor = 0.6908895, R-squared = 0.4773283)
 but significant (p-value: 2.375e-05).  
 
 Would you be comfortable using a linear model to predict the mean number of wins in a given season given their average relative payroll for that season?
 
-> Given such a low R-squared, I'd be hesitant to
+> Given such a low R-squared (not close to 1), I'd be hesitant to
 predict the exact number of wins, though with such a
 low p-value, I might be comfortable making more general
 predictions, like predicting the mean number of wins is
@@ -556,19 +560,29 @@ augment(teams_anl_lm) %>% arrange(.std.resid) %>% tail()
 Create a bootstrap distribution for the correlation and the regression coefficients. Copy and paste the following code into your file, and annotate each line with a # to (briefly) explain what each line of code is doing.
 
 ```{r}
+orig_cor <- 0.6908895
+orig_slp <- 5.0438
+gt_cor_cnt <- 0
+gt_slp_cnt <- 0
 N <- 10^4 # storing 10000 as N
 cor.boot <- numeric(N) # store vector of size 10000 as cor.boot
 int.boot <- numeric(N) # store vector of size 10000 as int.boot
 slope.boot <- numeric(N) # store vector of size 10000 as slope.boot
-n <- # number of observations here
+n <- 30 # number of observations here
 for (i in 1:N){ # loop 10000 times, storing loop iteration as i
     index <- sample(n, replace = TRUE) # store a vector of size n with values ranging from 1 to n as index
     team.boot <- teams_anl[index, ] # resampled data
     cor.boot[i] <- cor(team.boot$avg_z_pay, team.boot$avg_w_cnt) # what is x and y? The input & response variables, avg_z_pay and avg_w_cnt
+    if(cor.boot[i] > orig_cor){
+      gt_cor_cnt <- gt_cor_cnt + 1
+    }
     # recalculate linear model estimates
     team.boot.lm <- lm(avg_w_cnt ~ avg_z_pay, data = team.boot) # what is x and y?
     int.boot[i] <- coef(team.boot.lm)[1] # new intercept
     slope.boot[i] <- coef(team.boot.lm)[2] # new slope
+    if(slope.boot[i] > orig_slp){
+      gt_slp_cnt <- gt_slp_cnt + 1
+    }
   }
 
 mean(cor.boot) #mean correlation of bootstrapped data
@@ -586,14 +600,141 @@ quantile(slope.boot, c(.025, .975)) #95% CI of slope of bootstrapped data
 hist(slope.boot) #create histogram of slope of bootstrapped data
 observed <- summary(teams_anl_lm)$coefficients[2] # what is x and y? The input & response variables avg_z_pay and avg_w_cnt
 abline(v = observed, col = "red") # add line at original sample slope
+
+gt_cor_cnt
+gt_slp_cnt
 ```
 
 Figure out how many bootstrap samples had a higher correlation than the one you observed as your original sample correlation.
 
+> 5198 (51.98%)
+
 How many bootstrap samples had a higher slope coefficient than the one you observed.
 
-Wrap-up
--------
+> 5065 (50.65%)
 
+Use dplyr::mutate() with ifelse() to create a categorical variable that splits our yearID variable into two time intervals: 2000 - 2006 and 2007 - 2014. Then look at your work for question 14 and update to re-calculate average wins and average payroll z-scores separately for each team and time interval (hint: that means two variables in a dplyr::group_by() statement).
 
-  
+```{r}
+teams_bat_year_split <- teams_bat %>% # rename these dataframes as appropriate
+  mutate(recent = ifelse(yearID < 2007, 0, 1))# rename variables as appropriate
+table(teams_bat_year_split$recent, teams_bat_year_split$yearID) # trust but verify
+```
+
+```{r}
+teams_bat_year_split_anl <- teams_bat_year_split %>%
+  group_by(teamID,recent) %>%
+  summarise(avg_z_pay = mean(z_pay,na.rm=TRUE),
+  avg_w_cnt = mean(W,na.rm=TRUE))
+```
+
+```{r}
+teams_bat_year_split_anl %>% group_by(teamID) %>%
+  ggplot() +
+  geom_point(aes(x=avg_z_pay,y=avg_w_cnt)) +
+  geom_smooth(aes(x=avg_z_pay,y=avg_w_cnt),method="lm")
+```
+
+```{r}
+teams_bat_year_split_anl %>% group_by(teamID) %>%
+  ggplot() +
+  facet_wrap(~ recent) +
+  geom_point(aes(x=avg_z_pay,y=avg_w_cnt)) +
+  geom_smooth(aes(x=avg_z_pay,y=avg_w_cnt),method="lm")
+```
+
+Using ggplot2, create one plot, with side-by-side scatterplots for each time interval, showing mean payroll (x-axis) and mean number of wins (y-axis) across all teams.
+
+```{r}
+teams_bat_year_split_anl_w_mean_payroll <- teams_bat_year_split %>%
+  group_by(teamID,recent) %>%
+  summarise(mean_payroll = mean(payroll,na.rm=TRUE),
+  avg_w_cnt = mean(W,na.rm=TRUE))
+```
+
+```{r}
+teams_bat_year_split_anl_w_mean_payroll %>% group_by(teamID) %>%
+  ggplot() +
+  geom_point(aes(x=mean_payroll/1000,y=avg_w_cnt)) +
+  geom_smooth(aes(x=mean_payroll/1000,y=avg_w_cnt),method="lm")
+```
+
+```{r}
+teams_bat_year_split_anl_w_mean_payroll %>% group_by(teamID,recent) %>%
+  ggplot() +
+  facet_wrap(~ recent) +
+  geom_point(aes(x=mean_payroll/1000,y=avg_w_cnt)) +
+  geom_smooth(aes(x=mean_payroll/1000,y=avg_w_cnt),method="lm")
+```
+
+Comment on differences you see between these two plots, and compare to your previous scatterplot across all seasons.
+
+> It appears the slope of the regression line was steeper before 2007, indicating wins were cheaper. The scatterplot across all seasons hides the fact that these two quite models exist and simply draws a regression line over all the datapoints.
+
+Now, run two linear regression analyses (as shown in class), one for each time interval, using dplyr::group_by() %>% do() and broom::tidy()/glance()/augment(). 
+
+```{r}
+models <- teams_bat_year_split_anl %>%
+  group_by(recent) %>%
+  do(mod = lm(avg_w_cnt ~ avg_z_pay, data = .))
+
+models %>% tidy(mod) #coefs
+
+models %>% augment(mod) %>%
+  group_by(recent) %>%
+  summarize(tot_ss = sum((avg_w_cnt - mean(avg_w_cnt))^2),
+            res_ss = sum((avg_w_cnt - .fitted)^2))
+
+models %>% glance(mod)
+```
+
+Compare the coefficient estimates to each other, and to your original model. 
+
+> The intercepts of both models are similar (81.14 and 81.18) but the
+slopes are not (6.22 and 4.21). The coefficients of the original model
+are between these two models' coefficients (original intercept = 81.17
+and original slope = 5.04).
+
+Take the Oakland A's team as a specific case: 
+
+Which of your three model/time interval regression models (model 1: across all seasons; model 2: 2000 - 2006; model 3: 2007 - 2014) was better at predicting mean wins for them specifically?
+ 
+```{r}
+#Oakland A's actual data
+avg_w_cnt = 88.2
+avg_z_pay = -0.7910688
+
+#model 1
+(81.17 + 5.04 * avg_z_pay) - avg_w_cnt
+
+#model 2
+(81.14 + 6.22 * avg_z_pay) - avg_w_cnt
+
+#model 3
+(81.18 + 4.21 * avg_z_pay) - avg_w_cnt
+```
+
+> model 3  
+
+Which model overall accounted for the most variability in mean wins overall across all teams?
+
+> model 1. It had an R-squared of 0.4773 while model 2 and 3 had
+R-squared values of 0.3567 and 0.3947, respectively.
+
+How is the R2 estimate related to the plain old correlation between average wins and average payroll z-scores for each time interval?
+
+$$
+  0.4773 = 0.690869^{2}
+$$
+
+$$
+  0.3567 = 0.5972437^{2}
+$$
+
+$$
+  0.3947 = 0.6282515^{2}
+$$
+
+And in general in any simple linear regression model?
+
+> R-squared is the square of the correlation.  
