@@ -742,6 +742,9 @@ And in general in any simple linear regression model?
 Midterm: Exercises
 ==================
 
+Part 1: Probability
+-------------------
+
 Part 2: Sampling Distributions
 ------------------------------
 
@@ -866,3 +869,92 @@ The exponential (on your own).
 > With enough iterations, sample distributions for
 each of the above distributions converge to the same
 distribution: the normal distribution.
+
+Part 3: Problems from your peers!
+---------------------------------
+
+You attend a party where there are already 20 guests in the room. 
+Unbeknownst to you, 5 guests are zombies, and 7 are vampires.
+
+One person approaches you and buys you a drink. What is the probability
+that this person is a vampire?
+
+> Assuming a vampire is equally as likely approach me and
+buy me a drink as any other guest, (Probably a naive assumption)
+
+$$
+\begin{aligned}
+ P(V)=\frac{7}{20}
+ =0.35
+\end{aligned}
+$$
+
+Two people approach you and ask your opinion on the host’s outfit. What
+is the probability that they are both zombies?
+
+> Assuming a zombie is equally as likely to approach me and
+ask my opinion on the host's outfit as any other guest and
+that these two events are independent, (Again, probably
+a naive assumption; it is a well known fact that zombies
+perform a complex flocking phenomenon.)
+
+$$
+\begin{aligned}
+ P(Z_1)=\frac{5}{20}=0.25
+ P(Z_2)=\frac{4}{19}\approx 0.21
+ P(Z_1)\cap P(Z_2)= P(Z_1)P(Z_2)\texrm{ from Def. 2.4.2 (p. 73)}
+ \approx 0.25\times 0.21
+ \approx 0.0525
+\end{aligned}
+$$
+
+Three people approach you and ask you to be the fourth player in their 
+Texas hold’em game. What is the probability that they are all normal
+humans?
+
+> Assuming all the guests at the party who are not vampires
+or zombies are normal humans and assuming the aforementioned
+bits about equal likelyhood and independence,
+
+$$
+\begin{aligned}
+ P(H_1)=\frac{8}{20}=0.4
+ P(H_2)=\frac{7}{19}\approx 0.368
+ P(H_3)=\frac{6}{18}\approx 0.333
+ P(H_1)\cap P(H_2)\cap P(H_3)= P(H_1)P(H_2)P(H_3)\texrm{ from Def. 2.4.2 (p. 73)}
+ \approx 0.4\times 0.368\times 0.333
+ \approx 0.0490176
+\end{aligned}
+$$
+
+Bud only goes out trick-or-treating when there are clear skies (not too
+dark or too wet) and there is no full moon (he’s superstitious). There
+is a full moon every 27.32 days. Assuming it is a random Halloween –
+i.e. we are not aware of any weather forecast or pattern, nor recent
+moon phases – and the probability of clear skies on a random October
+31 is 0.6, what is the probability that Bud will go trick-or-treating?
+
+> M = full moon  
+  C = clear skies  
+  T = Bud goes out trick-or-treating
+
+$$
+\begin{aligned}
+   P(M) = \frac{1}{27.32}\approx 0.037
+   P(C) = .06\textrm{(given)}
+   P(T) = P(C)P(M^{c})
+\end{aligned}
+$$
+
+$$
+  P(M^{c}) = 1-P(M)\textrm{ from Property 1 (p. 58)}
+$$
+
+$$
+\begin{aligned}
+   P(T) = P(C)(1-P(M))
+   P(T) \approx 0.6\times (1-0.037)
+   P(T) \approx 0.6\times 0.963
+   \approx 0.5778
+\end{aligned}
+$$
