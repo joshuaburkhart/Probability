@@ -1,9 +1,10 @@
 ---
-title: "midterm"
+title: "MATH 630 Midterm"
 author: "Joshua Burkhart"
-output: 
-  pdf_document: 
+output:
+  pdf_document:
     latex_engine: xelatex
+  html_document: default
 ---
 ```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
 knitr::opts_chunk$set(fig.path = "Figs/",
@@ -21,14 +22,15 @@ Midterm: Simple Linear Regression
 
 Overview
 --------
-```{r}
+```{r, echo=FALSE, include=FALSE}
 library(plyr) #this must be loaded before dplyr 
 library(dplyr)
 library(ggplot2)
 library(broom)
+library(knitr)
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 library(Lahman)
 ?Lahman
 ```
@@ -41,7 +43,7 @@ Salaries <- Lahman::Salaries
 HLO Lahman
 ----------
 
-```{r}
+```{r, results="hide"}
 str(Teams)
 str(Salaries)
 glimpse(Teams)
@@ -115,7 +117,7 @@ How many levels do they have?
 
 What about missing data for any variables?
 
-```{r}
+```{r, results="hide"}
 unique(is.na(Teams))
 unique(is.na(Salaries))
 ```
@@ -148,13 +150,24 @@ recent_tpay <- filter(teams_pay, yearID >= 2000, yearID <= 2014)
 
 Gift
 ```{r}
-bat_stats <- battingStats(data = Lahman::Batting, idvars = c("playerID", "yearID", "stint", "teamID", "lgID"), cbind = TRUE)
+bat_stats <-
+  battingStats(data = Lahman::Batting,
+               idvars = c("playerID",
+                          "yearID",
+                          "stint",
+                          "teamID",
+                          "lgID"), cbind = TRUE)
 ```
 
 Write a dplyr expression to create a new dataframe that contains means for each of these three new variables for each team and year from 2000 - 2014 (rather than for each player). 
 
 ```{r}
-bat_avgs <- bat_stats %>% filter(yearID >= 2000, yearID <= 2014) %>% group_by(yearID,teamID) %>% summarise(ob_perc = mean(OBP,na.rm = TRUE),slug_perc = mean(SlugPct,na.rm = TRUE),ops = mean(OPS,na.rm = TRUE))
+bat_avgs <- bat_stats %>%
+  filter(yearID >= 2000, yearID <= 2014) %>% 
+  group_by(yearID,teamID) %>% 
+  summarise(ob_perc = mean(OBP,na.rm = TRUE),
+            slug_perc = mean(SlugPct,na.rm = TRUE),
+            ops = mean(OPS,na.rm = TRUE))
 head(bat_avgs)
 ```
 
@@ -327,21 +340,29 @@ Bivariate EDA (+ even more wrangling)
 Use ggplot2 to create a scatterplot showing payroll (x-axis) and wins (y-axis) across all time periods and teams.
 
 ```{r}
-teams_pay %>% select(payroll,W) %>% ggplot() +
-  geom_point(aes(x=payroll/1000,y=W)) + geom_smooth(aes(x=payroll/1000,y=W),method="lm")
+teams_pay %>% 
+  select(payroll,W) %>%
+  ggplot() +
+  geom_point(aes(x=payroll/1000,y=W)) +
+  geom_smooth(aes(x=payroll/1000,y=W),method="lm")
 ```
 
 One variable we are not accounting for in this scatterplot is year. It is possible that payrolls increase from season to season. Check this out using the same ggplot code you just used above, but make this plot with year on the x-axis and payroll/1000 on the y-axis.
 
 ```{r}
-teams_pay %>% select(yearID,payroll) %>% ggplot() +
-  geom_point(aes(x=yearID,y=payroll/1000)) + geom_smooth(aes(x=yearID,y=payroll/1000),method="lm")
+teams_pay %>% 
+  select(yearID,payroll) %>% 
+  ggplot() +
+  geom_point(aes(x=yearID,y=payroll/1000)) + 
+  geom_smooth(aes(x=yearID,y=payroll/1000),method="lm")
 ```
 
 A scatterplot may not be the best way to look at this pattern, since year is a discrete variable. So also try making boxplots stratified by yearID.
 
 ```{r}
-teams_pay %>% select(yearID,payroll) %>% ggplot() +
+teams_pay %>%
+  select(yearID,payroll) %>% 
+  ggplot() +
   geom_boxplot(aes(x=factor(yearID),y=payroll/1000))
 ```
 
@@ -363,7 +384,11 @@ teams_bat <- teams_bat %>% group_by(yearID) %>%
 Make a scatterplot in ggplot with year on the x-axis and payroll z-scores on the y-axis and two geoms: geom_point() and geom_smooth(method = "lm").
 
 ```{r}
-teams_bat %>% select(yearID,z_pay) %>% ggplot() +     geom_point(aes(x=yearID,y=z_pay)) + geom_smooth(aes(x=yearID,y=z_pay),method="lm")
+teams_bat %>% 
+  select(yearID,z_pay) %>% 
+  ggplot() +
+  geom_point(aes(x=yearID,y=z_pay)) + 
+  geom_smooth(aes(x=yearID,y=z_pay),method="lm")
 ```
 
 What do you see? 
@@ -381,7 +406,11 @@ relative to each year's mean payroll)
 Make a new scatterplot (minus geom_smooth) in ggplot with year on the x-axis and payroll z-scores on the y-axis. This time, add an additional aesthetic to colour the points in the scatterplot with a different color for each teamID, and an additional geom called geom_line().
 
 ```{r}
-teams_bat %>% select(yearID,z_pay,teamID) %>% ggplot() +     geom_point(aes(x=yearID,y=z_pay)) + geom_line(aes(x=yearID,y=z_pay,color=factor(teamID)))
+teams_bat %>%
+  select(yearID,z_pay,teamID) %>% 
+  ggplot() +     
+  geom_point(aes(x=yearID,y=z_pay)) + 
+  geom_line(aes(x=yearID,y=z_pay,color=factor(teamID)))
 ```
 
 What do you see? 
@@ -487,7 +516,7 @@ associated with an increase of 5.0434 wins. The OLS
 regression equation for predicting wins is of the form
 
 $$
-  \textrm{wins}_{i} = 81.1713 + 5.0438\textrm{standard deviations from mean payroll}_{i} + \epsilon_{i}
+  \textrm{wins}_i = 81.1713 + 5.0438\textrm{standard deviations from mean payroll}_i + \epsilon_i
 $$
 
 What is the average of all ŷ i values (in any simple linear regression model) equal to? 
@@ -570,14 +599,18 @@ int.boot <- numeric(N) # store vector of size 10000 as int.boot
 slope.boot <- numeric(N) # store vector of size 10000 as slope.boot
 n <- 30 # number of observations here
 for (i in 1:N){ # loop 10000 times, storing loop iteration as i
-    index <- sample(n, replace = TRUE) # store a vector of size n with values ranging from 1 to n as index
+    index <- sample(n, replace = TRUE) # store a vector of size n 
+                                       # with values ranging from 1
+                                       # to n as index
     team.boot <- teams_anl[index, ] # resampled data
-    cor.boot[i] <- cor(team.boot$avg_z_pay, team.boot$avg_w_cnt) # what is x and y? The input & response variables, avg_z_pay and avg_w_cnt
+    cor.boot[i] <- cor(team.boot$avg_z_pay, team.boot$avg_w_cnt) 
+    # what is x and y? The input & response variables, avg_z_pay and avg_w_cnt
     if(cor.boot[i] > orig_cor){
       gt_cor_cnt <- gt_cor_cnt + 1
     }
     # recalculate linear model estimates
-    team.boot.lm <- lm(avg_w_cnt ~ avg_z_pay, data = team.boot) # what is x and y?
+    team.boot.lm <- lm(avg_w_cnt ~ avg_z_pay, data = team.boot) 
+    # what is x and y?
     int.boot[i] <- coef(team.boot.lm)[1] # new intercept
     slope.boot[i] <- coef(team.boot.lm)[2] # new slope
     if(slope.boot[i] > orig_slp){
@@ -589,8 +622,10 @@ mean(cor.boot) #mean correlation of bootstrapped data
 sd(cor.boot) #standard deviation of correlation of bootstrapped data
 quantile(cor.boot, c(.025, .975)) #95% CI of correlation of bootstrapped data
 
-hist(cor.boot) #create histogram of correlation of bootstrapped data
-observed <- cor(teams_anl$avg_z_pay, teams_anl$avg_w_cnt) # what is x and y? The input & response variables avg_z_pay and avg_w_cnt
+hist(cor.boot) 
+#create histogram of correlation of bootstrapped data
+observed <- cor(teams_anl$avg_z_pay, teams_anl$avg_w_cnt) 
+# what is x and y? The input & response variables avg_z_pay and avg_w_cnt
 abline(v = observed, col = "red") # add line at original sample correlation
 # do the same as above for slope.boot (don't worry about int.boot)
 mean(slope.boot) #mean slope of bootstrapped data
@@ -598,7 +633,8 @@ sd(slope.boot) #standard deviation of slope of bootstrapped data
 quantile(slope.boot, c(.025, .975)) #95% CI of slope of bootstrapped data
 
 hist(slope.boot) #create histogram of slope of bootstrapped data
-observed <- summary(teams_anl_lm)$coefficients[2] # what is x and y? The input & response variables avg_z_pay and avg_w_cnt
+observed <- summary(teams_anl_lm)$coefficients[2] 
+# what is x and y? The input & response variables avg_z_pay and avg_w_cnt
 abline(v = observed, col = "red") # add line at original sample slope
 
 gt_cor_cnt
@@ -724,15 +760,11 @@ R-squared values of 0.3567 and 0.3947, respectively.
 How is the R2 estimate related to the plain old correlation between average wins and average payroll z-scores for each time interval?
 
 $$
-  0.4773 = 0.690869^{2}
-$$
-
-$$
-  0.3567 = 0.5972437^{2}
-$$
-
-$$
-  0.3947 = 0.6282515^{2}
+\begin{aligned}
+  0.4773 = 0.690869^{2} \\
+  0.3567 = 0.5972437^{2} \\
+  0.3947 = 0.6282515^{2} \\
+\end{aligned}
 $$
 
 And in general in any simple linear regression model?
@@ -744,6 +776,274 @@ Midterm: Exercises
 
 Part 1: Probability
 -------------------
+
+The following table shows the cumulative distribution
+function of a discrete random variable. Find the
+probability mass function.
+
+```{r}
+k = c(0,1,2,3,4,5)
+F.k = c(0,.1,.3,.7,.8,1.0)
+df = data.frame(k,F.k)
+kable(df)
+```
+
+$$
+\begin{aligned}
+  \textrm{cdf: }F(x) = \sum\limits_{t\le x}f(t) \\
+  \textrm{pmf: }f(t) = F(x) - F(x-1) = \sum\limits_{t\le x}f(t) - \sum\limits_{t\le x-1}f(t) \\
+  \\ \hline \\
+  f(0) = F(0) = 0 \\
+  f(1) = F(1) - F(0) = .1 - 0 = .1 \\
+  f(2) = F(2) - F(1) = .3 - .1 = .2 \\
+  f(3) = F(3) - F(2) = .7 - .3 = .4 \\
+  f(4) = F(4) - F(3) = .8 - .7 = .1 \\
+  f(5) = F(5) - F(4) = 1.0 - .8 = .2 \\
+\end{aligned}
+$$
+
+```{r}
+k = c(0,1,2,3,4,5)
+F.k = c(0,.1,.3,.7,.8,1.0)
+f.k = c(0,.1,.2,.4,.1,.2)
+df = data.frame(k,F.k,f.k)
+kable(df)
+```
+
+The probability density function of a random variable X is given by:
+
+$$
+  f(x)=\begin{cases}
+    cx, & \textrm{$0<x<4$} \\
+    0, & \text{otherwise} \\
+  \end{cases}
+$$
+
+a) find c
+
+$$
+\begin{aligned}
+  \int_{-\infty}^{\infty} f_x(x)\,dx = 1 \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  1 = \int_{0}^{4} cx\,dx \\
+  = c\times \Big[\frac{x^2}{2}\Big]_0^4 \\
+  = c\times \Big[\frac{4^2}{2} - 0\Big] \\
+  = c\times \Big[\frac{16}{2}\Big] \\
+  = 8c \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  c = \frac{1}{8} \\
+\end{aligned}
+$$
+
+b) find the cumulative distribution function F(x).
+
+$$
+\begin{aligned}
+  F_x(x) = \int_{-\infty}^{x} f_x(y)\,dy = P(X\le x) \\
+  \\ \hline \\
+  F_x(x) = \int_{0}^{x} \frac{1}{8}(y)\,dy\, \textrm{when $0\le x\le 4$} \\
+  = \frac{1}{8} \Big[\frac{y^2}{2}\Big]_0^{x} \\
+  = \frac{1}{8} \Big[\frac{x^2}{2} - 0\Big] \\
+  = \frac{x^2}{16} \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  F_x(x)=\begin{cases}
+    0, & \textrm{$x<0$} \\
+    \frac{x^2}{16}, & \textrm{$0\le x\le 4$} \\
+    1, & \textrm{$x>4$} \\
+  \end{cases}
+\end{aligned}
+$$
+
+c) Compute P(1 < X < 3)
+
+$$
+\begin{aligned}
+  P(1 < X < 3) = F_x(3) - F_x(1) \\
+  = \frac{3^2}{16} - \frac{1^2}{16} \\
+  = \frac{9}{16} - \frac{1}{16} \\
+  = \frac{8}{16} \\
+  = \frac{1}{2} \\
+  = 0.5 \\
+\end{aligned}
+$$
+
+The random variable X has a cumulative distribution function 
+(cdf):
+
+$$
+\begin{aligned}
+  F(x)=\begin{cases}
+    0, & \textrm{$x\le 0$} \\
+    \frac{x^3}{2+x^2}, & \textrm{$x>0$} \\
+  \end{cases}
+\end{aligned}
+$$
+
+Find the probability density function (pdf) of X.
+
+$$
+\begin{aligned}
+  pdf(x) = f_x(x) = F'(x) \\
+  = \frac{x^3}{2+x^2}'\, \textrm{when $x>0$} \\
+  = \frac{(2 + x^2)\times 3x^2 - x^3\times 2x}{(2 + x^2)^2}\, \textrm{(quotient rule)} \\
+  = \frac{6x^2 + 3x^4 - 2x^4}{(2 + x^2)^2} \\
+  = \frac{6x^2 + x^4}{(2 + x^2)^2} \\
+  = \frac{x^2(6+x^2)}{(2 + x^2)^2} \\
+  \\ \hline \\
+  f_x(x)=\begin{cases}
+    0, & \textrm{$x\le 0$} \\
+    \frac{x^2(6+x^2)}{(2 + x^2)^2}, & \textrm{$x>0$} \\
+  \end{cases}
+\end{aligned}
+$$
+
+The joint probability of the continuous random variable
+(X, Y) is given by:
+
+$$
+\begin{aligned}
+  f(x,y)=\begin{cases}
+    \frac{1}{28}(4x + 2y + 1), & \textrm{$0\le x<2,\,0\le y <2$} \\
+    0, & \textrm{otherwise} \\
+  \end{cases}
+\end{aligned}
+$$
+
+Find E(XY)
+
+$$
+\begin{aligned}
+  E\big[XY\big] = \int_{0}^{2} \int_{0}^{2} xy\Big[ \frac{1}{28}(4x + 2y + 1)\Big]\,dxdy \\
+  = \frac{1}{28}\int_{0}^{2} \int_{0}^{2} 4x^2y + 2xy^2 + xy\,dxdy \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  \textrm{(expr. 1)} = \frac{1}{28} \int_{0}^{2} 4x^2y + 2xy^2 + xy\,dx \\
+  = \frac{1}{28} \Big[4\frac{x^3}{3}y + 2\frac{x^2}{2}y^2 + \frac{x^2}{2}y \Big]_{x=0}^{x=2} \\
+  = \frac{1}{28} \Big[4\frac{8}{3}y + 2\times 2y^2 + 2y \Big] \\
+  = \frac{1}{28} \Big[\frac{32y}{3} + 4y^2 + 2y \Big] \\
+  = \frac{1}{28} \Big[\frac{38y}{3} + 4y^2 \Big] \\
+  = \frac{38y}{84} + \frac{4y^2}{28} \\
+  = \frac{19y}{42} + \frac{y^2}{7} \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  E\big[XY\big] = \int_{0}^{2} \textrm{(expr. 1)}\,dy \\
+  = \int_{0}^{2} \frac{19y}{42} + \frac{y^2}{7}\,dy \\
+  = \Big[\frac{19}{42}\times \frac{y^2}{2}+ \frac{1}{7}\times \frac{y^3}{3}\Big]_0^2 \\
+  = \Big[\frac{19}{42}\times 2 + \frac{1}{7}\times \frac{8}{3}\Big]-0 \\
+  \approx 1.286 \\
+\end{aligned}
+$$
+
+Find Cov(X, Y)
+
+$$
+\begin{aligned}
+  \textrm{Marginal Probabilities:} \\
+  \\ \hline \\
+  f_x(x) = \int_{-\infty}^{\infty} f(x,y) dy \\
+  f_y(y) = \int_{-\infty}^{\infty} f(x,y) dx \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  \\ \hline \\
+  f_x(x) = \int_{0}^{2} \frac{1}{28}(4x + 2y + 1)\,dy \\
+  =\frac{1}{28}\Big[ 4xy+2\frac{y^2}{2}+y\Big]_0^2 \\
+  =\frac{1}{28}\Big[ 8x + 4 + 2\Big] \\
+  =\frac{8x}{28} + \frac{6}{28} \\
+  =\frac{2x}{y} + \frac{3}{14} \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  \\ \hline \\
+  f_y(y) = \int_{0}^{2} \frac{1}{28}(4x + 2y + 1)\,dx \\
+  =\frac{1}{28}\Big[4\frac{x^2}{2} + 2yx + x\Big]_0^2 \\
+  =\frac{1}{28}\Big[8+4y+2\Big] \\
+  =\frac{4y}{28} + \frac{10}{28} \\
+  =\frac{y}{7} + \frac{5}{14} \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  \\ \hline \\
+  E\big[X\big] = \int_{-\infty}^{infty} xf_x(x)\,dx \\
+  =\int_{0}^{2} x\Big[\frac{2x}{7} + frac{3}{14}\Big]\,dx \\
+  =\int_{0}^{2} \frac{2x^2}{7}+ \frac{3x}{14}\,dx \\
+  =\Big[\frac{2x^3}{21} + \frac{3x^2}{28}\Big]_0^2 \\
+  =\Big[\frac{16}{21} + \frac{12}{28}\Big] - 0 \\
+  \approx 1.190 \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  E\big[Y\big] = \int_{-\infty}^{infty} yf_y(y)\,dy \\
+  =\int_{0}^{2} y\Big[\frac{y}{7}+ \frac{5}{14}\Big]\,dy \\
+  =\int_{0}^{2} \frac{y^2}{7}+ \frac{5y}{14}\,dy \\
+  =\Big[\frac{y^3}{21}+\frac{5y^2}{28}\Big]_0^2 \\
+  =\Big[\frac{8}{21} + \frac{20}{28}\Big] - 0 \\
+  \approx 1.095 \\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+  \\ \hline \\
+  \textrm{Cov(X,Y) = E[XY] - E[X]E[Y]} \\
+  \approx 1.286 - 1.095\times 1.190 \\
+  \approx 1.286 - 1.30305 \\
+  \approx -0.01705
+\end{aligned}
+$$
+
+Find the correlation coefficient $\rho_{XY}$
+
+$$
+\begin{aligned}
+  Var(X) = \int_{-\infty}^{\infty} (X - \mu x)^2 f(x)\,dx \\
+  =\int_0^2 (X-1.190)^2 \times \Big[\frac{2x}{7} + \frac{3}{14}\Big]\,dx \\
+  \textrm{used wolfram alpha solver} \\
+  \approx 0.297 \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  Var(Y) = \int_{-\infty}^{\infty} (Y - \mu y)^2 f(y)\,dy \\
+  =\int_0^2 (Y-1.095)^2 \times \Big[\frac{y}{7} + \frac{5}{14}\Big]\,dy \\
+  \textrm{used wolfram alpha solver} \\
+  \approx 0.324 \\
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+  Cor(X,Y) = \frac{Cov(X,Y)}{\sqrt{Var(X)\times Var(Y)}} \\
+  \approx \frac{-0.017}{\sqrt{0.297\times 0.324}} \\
+  \approx -0.055
+\end{aligned}
+$$
 
 Part 2: Sampling Distributions
 ------------------------------
@@ -884,8 +1184,8 @@ buy me a drink as any other guest, (Probably a naive assumption)
 
 $$
 \begin{aligned}
- P(V)=\frac{7}{20}
- =0.35
+ P(V)=\frac{7}{20} \\
+ =0.35 \\
 \end{aligned}
 $$
 
@@ -900,11 +1200,11 @@ perform a complex flocking phenomenon.)
 
 $$
 \begin{aligned}
- P(Z_1)=\frac{5}{20}=0.25
- P(Z_2)=\frac{4}{19}\approx 0.21
- P(Z_1)\cap P(Z_2)= P(Z_1)P(Z_2)\texrm{ from Def. 2.4.2 (p. 73)}
- \approx 0.25\times 0.21
- \approx 0.0525
+ P(Z_1)=\frac{5}{20}=0.25 \\
+ P(Z_2)=\frac{4}{19}\approx 0.21 \\
+ P(Z_1)\cap P(Z_2)= P(Z_1)P(Z_2)\textrm{ from Def. 2.4.2 (p. 73)} \\
+ \approx 0.25\times 0.21 \\
+ \approx 0.0525 \\
 \end{aligned}
 $$
 
@@ -918,12 +1218,12 @@ bits about equal likelyhood and independence,
 
 $$
 \begin{aligned}
- P(H_1)=\frac{8}{20}=0.4
- P(H_2)=\frac{7}{19}\approx 0.368
- P(H_3)=\frac{6}{18}\approx 0.333
- P(H_1)\cap P(H_2)\cap P(H_3)= P(H_1)P(H_2)P(H_3)\texrm{ from Def. 2.4.2 (p. 73)}
- \approx 0.4\times 0.368\times 0.333
- \approx 0.0490176
+ P(H_1)=\frac{8}{20}=0.4 \\
+ P(H_2)=\frac{7}{19}\approx 0.368 \\
+ P(H_3)=\frac{6}{18}\approx 0.333 \\
+ P(H_1)\cap P(H_2)\cap P(H_3)= P(H_1)P(H_2)P(H_3)\textrm{ from Def. 2.4.2 (p. 73)} \\
+ \approx 0.4\times 0.368\times 0.333 \\
+ \approx 0.0490176 \\
 \end{aligned}
 $$
 
@@ -940,9 +1240,9 @@ moon phases – and the probability of clear skies on a random October
 
 $$
 \begin{aligned}
-   P(M) = \frac{1}{27.32}\approx 0.037
-   P(C) = .06\textrm{(given)}
-   P(T) = P(C)P(M^{c})
+   P(M) = \frac{1}{27.32}\approx 0.037 \\
+   P(C) = .06\textrm{(given)} \\
+   P(T) = P(C)P(M^{c}) \\
 \end{aligned}
 $$
 
@@ -952,9 +1252,9 @@ $$
 
 $$
 \begin{aligned}
-   P(T) = P(C)(1-P(M))
-   P(T) \approx 0.6\times (1-0.037)
-   P(T) \approx 0.6\times 0.963
-   \approx 0.5778
+   P(T) = P(C)(1-P(M)) \\
+   P(T) \approx 0.6\times (1-0.037) \\
+   P(T) \approx 0.6\times 0.963 \\
+   \approx 0.5778 \\
 \end{aligned}
 $$
