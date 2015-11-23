@@ -1,0 +1,312 @@
+---
+title: "MATH630 Replication Project Analysis"
+author: "Joshua Burkhart"
+date: "November 22, 2015"
+output: pdf_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, echo=FALSE, include=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(ggfortify)
+library(GGally)
+library(car)
+library(MBESS)
+library(ggplot2)
+library(magrittr)
+```
+
+```{r}
+full <- read.csv("/Users/joshuaburkhart/SoftwareProjects/Probability/final_proj/data.csv", row.names = 1)
+
+## Generate centered and transformed variables
+full$lnAs <- log(full$Ascounty) - mean(na.omit(log(full$Ascounty)))
+full$lnInc <- log(full$MedIncome) - mean(na.omit(log(full$MedIncome)))
+full$Population <- as.numeric(as.character(full$Population))
+full$lnsmk <- full$smkrate
+full$lnar <- log(full$AdjRate)
+```
+
+```{r}
+## Bivariate, Untransformed
+## Arsenic Levels and Lung Cancer Incidence, weighted
+glm1 <- glm(full$AdjRate ~ full$Ascounty, family=poisson, weights=as.numeric(full$Population))
+summary(glm1)
+lm1 <- lm(full$lnar ~ full$Ascounty, weights=as.numeric(full$Population))
+summary(lm1)
+
+plot(y=log(full$AdjRate), x=full$Ascounty, ylab="Lung Cancer Rate", xlab="Arsenic [ppm]", main="Association between Arsenic and Lung Cancer Incidence")
+abline(a=glm1$coef[1], b=glm1$coef[2], col=1)
+
+glm1T <- data.frame(glm1$linear.predictors, glm1$y, glm1$model[3])
+glm1gg <- ggplot(glm1T, aes(x=glm1.linear.predictors, y=log(glm1.y)))
+glm1gg + geom_point(aes(size=X.weights.)) + 
+		 geom_abline(coef(lm(log(full$AdjRate) ~ full$Ascounty,   weights=as.numeric(full$Population))))
+```
+
+```{r}
+## Adjusted, Untransformed
+## Arsenic, Smoking, SES
+SESassmk <- glm(full$AdjRate ~ full$smkrate + full$Ascounty + full$MedIncome, family=poisson, weights=as.numeric(full$Population))
+summary(SESassmk)
+
+SESassmklm <- lm(full$lnar ~ full$smkrate + full$Ascounty + full$MedIncome, weights=as.numeric(full$Population))
+summary(SESassmklm)
+```
+
+You can also embed plots, for example:
+
+```{r, echo=TRUE, include = TRUE}
+## Estimate the 25, 50, amd 75% quartile points for each variable for the quartiles interaction models
+AsCut <- NA
+AsCut[1] <- as.numeric(summary(full$lnAs)[2])
+AsCut[2] <- as.numeric(summary(full$lnAs)[3])
+AsCut[3] <- as.numeric(summary(full$lnAs)[5])
+
+SmkCut <- NA
+SmkCut[1] <- as.numeric(summary(full$lnsmk)[2])
+SmkCut[2] <- as.numeric(summary(full$lnsmk)[3])
+SmkCut[3] <- as.numeric(summary(full$lnsmk)[5])
+
+SESCut <- NA
+SESCut[1] <- as.numeric(summary(full$lnInc)[2])
+SESCut[2] <- as.numeric(summary(full$lnInc)[3])
+SESCut[3] <- as.numeric(summary(full$lnInc)[5])
+```
+
+```{r}
+## Continuous Interaction Models
+## Arsenic and Smoking
+AsSmk <- full$lnAs * full$lnsmk
+intAsSmk <- aov(full$AdjRate ~ full$lnsmk + full$lnAs + full$lnInc + AsSmk, weights=as.numeric(full$Population))
+summary(intAsSmk)
+```
+
+```{r}
+## Arsenic and SES
+AsSES <- full$lnAs * full$lnInc
+intAsSES <- aov(full$AdjRate ~ full$lnsmk + full$lnAs + full$lnInc + AsSES, weights=as.numeric(full$Population))
+summary(intAsSES)
+```
+
+```{r}
+## Calculate Strat Groups ##
+## Smoking Quartiles
+smkgrp <- ifelse(is.na(full$lnsmk), NA, ifelse(full$lnsmk < SmkCut[1], 1, ifelse(full$lnsmk >= SmkCut[1] & full$lnsmk < SmkCut[2], 2, ifelse(full$lnsmk >= SmkCut[2] & full$lnsmk < SmkCut[3], 3, 4))))
+```
+
+```{r}
+## SES Low-Income Cutoffs
+SESgrp <- ifelse(is.na(full$MedIncome), NA, ifelse(full$MedIncome < 24000 & !is.na(full$MedIncome), 1, ifelse(full$MedIncome>= 24000 & full$MedIncome< 28700, 2, ifelse(full$MedIncome >= 28700 & full$MedIncome < 38300, 3, 4))))
+```
+
+```{r}
+## SES Quartiles
+#SESgrp <- ifelse(full$lnInc< -0.158, 1, ifelse(full$lnInc>=-0.158 & full$lnInc< -0.00391, 2, ifelse(full$lnInc>=-0.00391 & full$lnInc <0.1478, 3, 4)))
+## Arsenic Quartiles
+AsQ <- ifelse(is.na(full$lnAs), NA, ifelse(full$lnAs < AsCut[1], 1, ifelse(full$lnAs >= AsCut[1] & full$lnAs < AsCut[2], 2, ifelse(full$lnAs >= AsCut[2] & full$lnAs < AsCut[3], 3, 4))))
+```
+
+```{r}
+## Quartile-Based Interaction Models
+## Convert quartiles to factors
+AsQf <- as.factor(AsQ)
+smkgrpf <- as.factor(smkgrp)
+smkgrpfbak <- smkgrpf
+SESgrpf <- as.factor(SESgrp)
+```
+
+```{r}
+#############
+## ARSENIC ## figure 2
+#############
+## Arsenic and Smoking table 3 first line
+smkgrpf <- smkgrpfbak
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+intAsSmk <- aov(full$AdjRate ~ SESgrpf + AsQf*smkgrpf, weights=as.numeric(full$Population))
+summary(intAsSmk)
+```
+
+```{r}
+## Without SES
+intAsSmk2 <- aov(full$AdjRate ~ AsQf*smkgrpf, weights=as.numeric(full$Population))
+summary(intAsSmk2)
+```
+
+```{r}
+## Arsenic and SES table 3 line 2 
+intAsSES <- aov(full$AdjRate ~ smkgrpf + AsQf*SESgrpf, weights=as.numeric(full$Population))
+summary(intAsSES) 
+```
+ 
+```{r}
+## Plot the Interaction between Arsenic and Smoking WITHOUT SES
+smkgrpf <- smkgrpfbak
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+r1 <- glm(full[smkgrpf==1,]$AdjRate ~ full[smkgrpf==1,]$lnAs, family=poisson, weights=as.numeric(full[smkgrpf==1,]$Population))
+summary(r1)
+r2 <- glm(full[smkgrpf==2,]$AdjRate ~ full[smkgrpf==2,]$lnAs, family=poisson, weights=as.numeric(full[smkgrpf==2,]$Population))
+summary(r2)
+data1 <- cbind( c(t(r1$model[2]),t(r2$model[2])),
+				c(log(r1$fitted.values),log(r2$fitted.values)), # figure 2 replace fitted
+				c(r1$weights, r2$weights),
+				c(rep("1",dim(r1$model[2])[1]), rep("2",dim(r2$model[2])[1])))
+data1 <- as.data.frame(data1, stringsAsFactors=FALSE)
+names(data1) <- c("logAs","logRate", "weight", "smkgrp")
+data1$logAs  <- as.numeric(as.character(data1$logAs))
+data1$logRate <- as.numeric(as.character(data1$logRate))
+data1$weight  <- as.numeric(as.character(data1$weight))
+data1$smkgrp  <- as.numeric(as.character(data1$smkgrp))
+data1$adjinc  <- c(as.numeric(coef(r1)[2])*r1$model[,2]*0, as.numeric(coef(r2)[2])*r2$model[,2]*0)
+data1$adjrate <- data1$adjinc+data1$logRate
+
+assmkp <- ggplot(data1, aes(x=logAs, y=adjrate, shape=factor(smkgrp), color=factor(smkgrp))) 
+assmkp + stat_smooth(method = "glm", level=0.95, alpha=1, fill="grey80", color="black") +
+		 #scale_color_manual(values=c("grey50","grey70")) +		
+		 geom_point(aes(size=weight)) +
+		 geom_point() +
+		 theme(legend.position = "right") +
+		 theme_bw()
+
+```
+
+
+```{r}
+## GLMS for smoking levels WITH SES
+smkgrpf <- smkgrpfbak
+## Bottom 50% vs Top 50%
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+r1 <- glm(full[smkgrpf==1,]$AdjRate ~ full[smkgrpf==1,]$lnAs + full[smkgrpf==1,]$MedIncome, family=poisson, weights=as.numeric(full[smkgrpf==1,]$Population))
+summary(r1)
+r2 <- glm(full[smkgrpf==2,]$AdjRate ~ full[smkgrpf==2,]$lnAs + full[smkgrpf==2,]$MedIncome, family=poisson, weights=as.numeric(full[smkgrpf==2,]$Population))
+summary(r2)
+```
+
+```{r}
+## Plot the Interaction between Arsenic and Smoking with SES
+data1 <- cbind( c(t(r1$model[2]),t(r2$model[2])), 
+				c(log(r1$fitted.values),log(r2$fitted.values)),
+				c(r1$weights, r2$weights), 
+				c(rep("1",dim(r1$model[2])[1]), rep("2",dim(r2$model[2])[1])))
+data1 <- as.data.frame(data1, stringsAsFactors=FALSE)
+names(data1) <- c("logAs","logRate", "weight", "smkgrp")
+data1$logAs  <- as.numeric(as.character(data1$logAs))
+data1$logRate <- as.numeric(as.character(data1$logRate))
+data1$weight  <- as.numeric(as.character(data1$weight))
+data1$smkgrp  <- as.numeric(as.character(data1$smkgrp))
+data1$adjinc  <- c(as.numeric(coef(r1)[2])*r1$model[,2], as.numeric(coef(r2)[2])*r2$model[,2])
+data1$adjrate <- data1$adjinc+data1$logRate
+
+assmkp <- ggplot(data1, aes(x=logAs, y=adjrate, shape=factor(smkgrp), color=factor(smkgrp))) 
+assmkp + stat_smooth(method = "glm", level=0.95, alpha=1, fill="grey80", color="black") +
+		 #scale_color_manual(values=c("grey50","grey70")) +		
+		 geom_point(aes(size=weight)) +
+  	 geom_point() +
+		 theme(legend.position = "right") +
+		theme_bw()
+```
+
+```{r}
+## Determine the concentration of each heavy metal in KY|WV and !KY&!WV
+## Average County averages for both states
+
+## Arsenic
+KYWVas 	  <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty)) 
+KYWVas
+notKYWVas <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty)) 
+notKYWVas
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty))
+
+## Smoking Prevalence
+KYWVsmk 	  <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate)) 
+KYWVsmk
+notKYWVsmk <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate)) 
+notKYWVsmk
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate))
+
+## Median Income
+KYWVmed	   <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome)) 
+KYWVmed
+notKYWVmed <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome)) 
+notKYWVmed
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome))
+
+## Lung cancer incidence
+KYWVrate	<- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate)) 
+KYWVrate
+notKYWVrate	<- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate)) 
+notKYWVrate
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate))
+
+
+## Draw a bar chart of the values used in the T-tests
+bardata <- c(notKYWVas, KYWVas,
+			 notKYWVsmk*100, KYWVsmk*100, notKYWVmed/1000, KYWVmed/1000, notKYWVrate, KYWVrate)
+barcats <- c("Arsenic", "Arsenic",
+			 "Smoking", "Smoking", "Income", "Income", "Rate", "Rate")
+barid <- c("Other", "WV/KY",
+		   "Other", "WV/KY", "Other", "WV/KY", "Other", "WV/KY")
+bardata1 <- data.frame(barid, barcats, bardata)
+names(bardata1) <- c("ID", "Category", "Values")
+
+bar1 <- ggplot(bardata1, aes(Category, fill=ID, y=Values))
+bar1 +  geom_bar(position="dodge", stat="identity") + theme_bw()
+```
+
+```{r}
+# Violin Plots
+
+## Arsenic
+KYWVas 	  <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty)
+notKYWVas <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty)
+
+length(KYWVas) = length(notKYWVas)
+KYWVdf    <- KYWVas    %>% as.data.frame() %>% mutate(KYWV="KYWV") %>% select("Ascounty"=1,"KYWV"=2)
+notKYWVdf <- notKYWVas %>% as.data.frame() %>% mutate(KYWV="notKYWV") %>% select("Ascounty"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=Ascounty)) + geom_violin() +     
+                          geom_boxplot(width=0.1)
+
+## Smoking Prevalence
+KYWVsmk 	 <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate)
+notKYWVsmk <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate)
+
+length(KYWVsmk) = length(notKYWVsmk)
+KYWVdf    <- KYWVsmk    %>% as.data.frame() %>% mutate(KYWV="KYWV") %>% select("smkrate"=1,"KYWV"=2)
+notKYWVdf <- notKYWVsmk %>% as.data.frame() %>% mutate(KYWV="notKYWV") %>% select("smkrate"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=smkrate)) + geom_violin() +     
+                          geom_boxplot(width=0.1)
+
+## Median Income
+KYWVmed	   <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome)
+notKYWVmed <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome) 
+
+length(KYWVmed) = length(notKYWVmed)
+KYWVdf    <- KYWVmed    %>% as.data.frame() %>% mutate(KYWV="KYWV") %>% select("MedIncome"=1,"KYWV"=2)
+notKYWVdf <- notKYWVmed %>% as.data.frame() %>% mutate(KYWV="notKYWV") %>% select("MedIncome"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=MedIncome)) + geom_violin() +     
+                          geom_boxplot(width=0.1)
+
+## Lung cancer incidence
+KYWVrate	  <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate)
+notKYWVrate	<- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate) 
+
+length(KYWVrate) = length(notKYWVrate)
+KYWVdf    <- KYWVrate    %>% as.data.frame() %>% mutate(KYWV="KYWV") %>% select("AdjRate"=1,"KYWV"=2)
+notKYWVdf <- notKYWVrate %>% as.data.frame() %>% mutate(KYWV="notKYWV") %>% select("AdjRate"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=AdjRate)) + geom_violin() +     
+                          geom_boxplot(width=0.1)
+```

@@ -1,0 +1,621 @@
+## Estimate county-level Arsenic levels, directly-standardized lung cancer incidence and smoking rates for each county in the study area. 
+## Estimate association and interaction between exposure, smoking, median income, and lung cancer incidence.
+
+## As per PONE-D-11-06364
+## Association of Arsenic Exposure with Lung Cancer Incidence Rates in the United States PLoS ONE
+## Putila J and Guo NL
+## MBR Cancer Center and WVU Department of Community Medicine
+## Room 1814
+## Morgantown WV, 26506
+
+rm(list=ls())
+gc()
+
+## Import Population Data
+## County-level estimates only from the 2000 U.S. Census
+CApop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/CA/2kh06_mod.csv")
+CTpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/CT/2kh09_mod.csv")
+IApop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/IA/2kh19_mod.csv")
+KYpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/KY/2kh21_mod.csv")
+LApop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/LA/2kh22_mod.csv")
+NJpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/NJ/2kh34_mod.csv")
+NMpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/NM/2kh35_mod.csv")
+UTpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/UT/2kh49_mod.csv")
+
+## Remove extraneous character from county name
+IApop$Area <- ifelse(IApop$Area=="O'Brien County, Iowa", "OBrien County, Iowa", as.character(factor(IApop$Area)))
+## Combine individual population files
+Allpop <- rbind(CApop, CTpop, IApop, KYpop, LApop, NJpop, NMpop, UTpop)
+
+## Total number of counties thus far
+NUMCOUNT <- length(Allpop$Area)[1]
+NUMCOUNT
+## Should be 432
+
+## Shortened name for the county
+CountyShort <- as.character(substr(Allpop$Area, 1,8))
+## Move county name to end of data frame
+Area <- Allpop$Area
+Allpop <- Allpop[,-1]
+Allpop <- data.frame(Allpop, CountyShort, Area)
+
+## Read population data for the U.S.
+US <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Census/US/2kh00_mod.csv")
+## Remove row name, total, males, females columns
+US <- US[,-c(1:4)]
+
+## Import Incidence Data from SEER
+## IA,KY,LA,NJ,NM,UT,CA,CT
+Allinc <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/SEER/all_dca.txt")
+## Only 2000+ CA entries
+Allinc <- Allinc[substr(Allinc$StateCounty,1,2)!="CA" | Allinc$YearDx>=2000,]
+
+## Missouri, MO - age adjusted
+MOinc <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/MO/mica_mod.csv")
+MOinc$County <- paste(as.character(factor(MOinc$County)), ", Missouri", sep="")
+MOinc$FIPSCode <- ifelse(as.numeric(MOinc$FIPSCode) < 10 , paste(0, MOinc$FIPSCode, sep=""), MOinc$FIPSCode)
+MOinc$FIPSCode <- ifelse(as.numeric(MOinc$FIPSCode) < 100, paste(0, MOinc$FIPSCode, sep=""), MOinc$FIPSCode)
+MOinc$FIPS <- paste("29", MOinc$FIPSCode, sep="")
+MOpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/MO/2kh29_mod.csv", header=TRUE)
+
+## Ohio, OH - age adjusted
+OHinc <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/OH/OHinc.csv")
+OHinc$County <- paste(as.character(factor(OHinc$County)), " County, Ohio", sep="")
+OHinc$FIPSCode <- ifelse(as.numeric(OHinc$FIPSCode) < 10 , paste(0, OHinc$FIPSCode, sep=""), OHinc$FIPSCode)
+OHinc$FIPSCode <- ifelse(as.numeric(OHinc$FIPSCode) < 100, paste(0, OHinc$FIPSCode, sep=""), OHinc$FIPSCode)
+OHinc$FIPS <- paste("39", OHinc$FIPSCode, sep="")
+OHpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/OH/2kh39_mod.csv", header=TRUE)
+
+## West Virginia, WV - age adjusted
+WVinc <- read.table("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/WV/wv_inc.txt", sep=" ", header=TRUE)
+WVfips <- read.table("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/WV/wv_fips.txt", sep="\t", header=TRUE)
+WVpop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/WV/2kh54_mod.csv", header=TRUE)
+WVinc <- data.frame(WVfips[,2], WVfips[,1], WVinc[,4])
+colnames(WVinc) <- c("County", "FIPS", "AdjRate")
+WVinc$County <- paste(WVinc$County, ", West Virginia", sep="")
+
+## Pennsylvania, PA - age adjusted
+PAinc <- read.table("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/PA/pa_inc.txt", sep="\t", header=TRUE)
+PAinc$County <- paste(PAinc$County, "County, Pennsylvania", sep="")
+PApop <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/PA/2kh42_mod.csv")
+PAfips <- read.table("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/PA/pa_fips.txt", sep="\t", header=TRUE)
+PAinc <- data.frame(PAinc[,1], PAfips[,1], PAinc[,10])
+
+#Fix extraneous issues in SEER naming of StateCounty
+Allinc$StateCounty <- ifelse(Allinc$StateCounty=="CA: Los Angeles Registry (06037)" , "CA: Los Angeles County (06037)", as.character(factor(Allinc$StateCounty)))
+Allinc$StateCounty <- ifelse(Allinc$StateCounty=="NM: Cibola County (35006) - 1982+", "NM: Cibola County (35006)", as.character(factor(Allinc$StateCounty)))
+Allinc$StateCounty <- ifelse(Allinc$StateCounty=="NM: Valencia County (35061) - 1982+", "NM: Valencia County (35061)", as.character(factor(Allinc$StateCounty)))
+
+## Create a FIPS code for the SEER data
+FIPS <- substr(Allinc$StateCounty, nchar(as.character(Allinc$StateCounty))-5, nchar(as.character(Allinc$StateCounty))-1)
+CountyShort <- substr(Allinc$StateCounty, 5, 12)
+
+## Convert state abbreviation to full name
+StateT <- substr(Allinc$StateCounty, 1, 2)
+State <- ifelse(StateT=="CA", ", California",
+			ifelse(StateT=="CT", ", Connecticut",
+			ifelse(StateT=="LA", ", Louisiana",
+			ifelse(StateT=="IA", ", Iowa",
+			ifelse(StateT=="KY", ", Kentucky",
+			ifelse(StateT=="NJ", ", New Jersey",
+			ifelse(StateT=="UT", ", Utah",
+			ifelse(StateT=="NM", ", New Mexico",
+			"ERROR"
+			))))))))
+Area <- paste(substr(Allinc$StateCounty, 5, nchar(as.character(Allinc$StateCounty))-8), State, sep="")
+Allinc <- data.frame(Allinc, CountyShort, FIPS, Area)
+Allinc <- Allinc[Allinc$CountyShort!="Unknown ",]
+rm(StateT)
+
+
+########################
+## Population Weights       ##
+########################
+
+## Combined Population for all 12 states.
+Pop.1 <- rbind(CApop, CTpop, IApop, KYpop, LApop, NJpop, NMpop, UTpop, MOpop, OHpop, WVpop, PApop)
+rm(CApop, CTpop, IApop, KYpop, LApop, NJpop, NMpop, UTpop, OHpop, MOpop, WVpop, PApop)
+
+## Sum the population of each age group to get the total population
+Pop <- matrix(NA, nrow=dim(Pop.1)[1], ncol=2)
+for(i in 1:dim(Pop.1)[1]){
+	Pop[i,1] <- as.character(factor(Pop.1[i,1]))
+	Pop[i,2] <- sum(Pop.1[i,2:14])
+}
+colnames(Pop) <- c("PopCounty", "Population")
+
+#############################
+## Calculate Raw Incidence         ##
+#############################
+## Lung Cancer diagnosed between 1996 and 2005
+## Obtained from the NCI-SEER database.
+
+## Age Groups Pairs
+agroups <- c(0,4,5,9,10,14,15,19,20,24,25,34,35,44,45,54,55,59,60,64,65,74,75,84,85,130)
+
+crate <- matrix(rep(NA,NUMCOUNT*13), NUMCOUNT, 13)
+County <- matrix(rep(NA, NUMCOUNT), NUMCOUNT, 1)
+FIPS <- matrix(rep(NA, NUMCOUNT), NUMCOUNT, 1)
+
+## Years of data available
+## Either 6 or 10 depending upon when the state entered SEER
+yearsdata <- NA
+for(i in 1:NUMCOUNT){
+yearsdata[i] <- ifelse(unique(substr(Allinc[as.character(Allinc$Area)==as.character(Allpop[i,]$Area),]$StateCounty,1,2)) %in% c("CT", "IA", "NM", "UT"), 10, 
+					 ifelse(unique(substr(Allinc[as.character(Allinc$Area)==as.character(Allpop[i,]$Area),]$StateCounty,1,2)) %in% c("CA", "LA", "KY", "NJ"), 6, NA))
+}
+
+## SEER Areas
+## Calculates the crude rate (crate) by taking the total number of cases and dividing that by the number of years (6 or 10)
+## then multiplies by 100,000 to get the average incidence rate per 100,000 persons in each of the j=1:13 age groups
+for(i in 1:NUMCOUNT){
+	crateRow <- NA
+	for(j in 1:13){
+	crate[i,j] <- ((dim(Allinc[as.character(Allinc$Area)==as.character(Allpop[i,]$Area)
+				& (Allinc$YearDx <= 2005 & Allinc$YearDx >= 1996)
+				& (Allinc$AgeDx >= agroups[j+(j-1)] & Allinc$AgeDx <= agroups[j+j] ),
+				])[1] / yearsdata[i]) / Allpop[i,j])*100000
+	}
+	County[i] <- as.character(Allpop[i,15])
+	FIPS[i] <- as.character(unique(factor(Allinc[as.character(Allinc$Area)==as.character(factor(Allpop[i,]$Area)),]$FIPS)))
+}
+
+## Direct Standardization to the 2000 U.S. Population
+Allstd <- matrix(NA, nrow=NUMCOUNT, ncol=13)
+AdjRate <- NA
+
+## Directly standardizes the rate to the 2000 U.S. population, using the US census data
+for(i in 1:NUMCOUNT){
+	for(j in 1:13){
+		Allstd[i,j] <- (crate[i,j] * US[1,j])
+	}
+	AdjRate[i] <- (sum(Allstd[i,]) / sum(US[1,]))
+}
+
+## Combine the calculated rates with the published rates
+temp <- data.frame(County, FIPS, AdjRate)
+colnames(temp) <- c ("County", "FIPS", "AdjRate")
+colnames(MOinc) <- c("County", "AdjRate", "Fipsshort", "FIPS")
+colnames(OHinc) <- c("County", "AdjRate", "Fipsshort", "FIPS")
+colnames(WVinc) <- c("County", "FIPS", "AdjRate")
+colnames(PAinc) <- c("County", "FIPS", "AdjRate")
+
+
+## Combine SEER and independent incidence
+full <- rbind(temp, MOinc[,c(1,4,2)], OHinc[,c(1,4,2)], as.matrix(WVinc), as.matrix(PAinc))
+## Add SES data
+full <- cbind(full, Pop)
+rm(temp)
+## Update the number of counties, now 757
+NUMCOUNT <- dim(full)[1]
+NUMCOUNT
+## Remove Sets
+rm(MOinc, OHinc, WVinc, PAinc)
+
+
+######################
+## Read in SES data ##
+######################
+
+## Columns to read from each set
+wide <- c(2 , 4, 127, 6, 53, 44, 23)
+colname <- c("SFIPS", "CFIPS", "Junk1", "MedIncome", "Junk2", "SESName", "Junk3")
+
+## Data sets
+CAses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/CA/est00_CA.dat", widths = wide, col.names = colname)
+CAses <- CAses[2:59,c(1,2,4,6)]
+
+CTses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/CT/est00_CT.dat", widths = wide, col.names = colname)
+CTses <- CTses[2:9,c(1,2,4,6)]
+
+IAses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/IA/est00_IA.dat", widths = wide, col.names = colname)
+IAses <- IAses[2:100,c(1,2,4,6)]
+
+KYses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/KY/est00_KY.dat", widths = wide, col.names = colname)
+KYses <- KYses[2:121,c(1,2,4,6)]
+
+LAses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/LA/est00_LA.dat", widths = wide, col.names = colname)
+LAses <- LAses[2:65,c(1,2,4,6)]
+
+NJses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/NJ/est00_NJ.dat", widths = wide, col.names = colname)
+NJses <- NJses[2:22,c(1,2,4,6)]
+
+NMses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/NM/est00_NM.dat", widths = wide, col.names = colname)
+NMses <- NMses[2:34,c(1,2,4,6)]
+
+UTses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Census/UT/est00_UT.dat", widths = wide, col.names = colname)
+UTses <- UTses[2:30,c(1,2,4,6)]
+
+OHses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/OH/est00_OH.dat", widths = wide, col.names = colname)
+OHses <- OHses[2:89,c(1,2,4,6)]
+
+MOses <- read.table("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/MO/est00_MO.dat", sep="\t")
+MOses <- MOses[,c(1,2,21,24)]
+colnames(MOses) <- c("SFIPS", "CFIPS", "MedIncome", "SESName")
+
+WVses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/WV/est00_WV.dat", widths = wide, col.names = colname)
+WVses <- WVses[2:56, c(1,2,4,6)]
+
+PAses <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/Other Inc/PA/est00_PA.dat", widths = wide, col.names = colname)
+PAses <- PAses[2:68, c(1,2,4,6)]
+
+SES <- rbind(CAses, CTses, IAses, KYses, LAses, NJses, NMses, UTses, MOses, OHses, WVses, PAses)
+
+## Add leading zeroes to the State/County FIPS Code
+SES$CFIPS <- ifelse(as.numeric(SES$CFIPS) < 10, paste(0, SES$CFIPS, sep=""), SES$CFIPS)
+SES$CFIPS <- ifelse(as.numeric(SES$CFIPS) < 100, paste(0, SES$CFIPS, sep=""), SES$CFIPS)
+
+full <- cbind(full, SES)
+
+#####################
+## Read in BRFSS data ##
+#####################
+wide <- c(2, 95, 1, 1, 1, 2, 29, 3, 1158)  #max 1293
+
+colname <- c("State", "Junk1", "Smoke100", "SmokeDay", "Quit", "Age", "Junk3", "County", "Junk4") 
+
+## Read in the data
+brfss.pre <- read.fwf("C:/Users/jputila/Desktop/Heavy Metal Data/BRFSS/Year08/CDBRFS08.ASC", widths = wide, col.names = colname)
+
+## Remove extraneous variables and observations
+brfss <- brfss.pre[,c(1,3,4,5,6,8)]
+#rm(brfss.pre)
+brfss$State <- ifelse(brfss$State < 10, paste("0", brfss$State, sep=""), brfss$State)
+brfss <- brfss[(brfss$State=="06" | 
+				brfss$State=="09" |
+			    brfss$State=="19" | 
+			    brfss$State=="21" | 
+			    brfss$State=="22" |
+				brfss$State=="29" |
+			    brfss$State=="34" | 
+			    brfss$State=="35" |
+				brfss$State=="39" |
+			    brfss$State=="49" |
+				brfss$State=="54" |
+				brfss$State=="42") &
+				!is.na(brfss$State),]
+
+## Only adults
+brfss <- brfss[brfss$Age>=18,]
+
+## Add leading zeroes to the County FIPS Code
+brfss$County <- ifelse(as.numeric(brfss$County) < 10 , paste(0, brfss$County, sep=""), brfss$County)
+brfss$County <- ifelse(as.numeric(brfss$County) < 100, paste(0, brfss$County, sep=""), brfss$County)
+
+## Get rid entries with county suppressed due to small sample
+brfss <- brfss[!is.na(brfss$County),]
+
+## Code smoking status
+## Smoked 100 cigarettes in lifetime, currently smokes daily, or currently smokes daily/some days
+smk100 <- ifelse(brfss$Smoke100==1, 1, ifelse(brfss$Smoke100==2,0, NA))
+smkDay <- ifelse(brfss$SmokeDay==1, 1, ifelse(smk100==0 | brfss$SmokeDay==2 | brfss$SmokeDay==3, 0, NA))
+smkAny <- ifelse(brfss$SmokeDay==1 | brfss$SmokeDay==2, 1, ifelse(brfss$SmokeDay==3 | smk100==0, 0, NA))
+scfips <- paste(brfss$State, brfss$County, sep="")
+rateDay <- matrix(rep(NA, NUMCOUNT), NUMCOUNT)
+rateAny <- matrix(rep(NA, NUMCOUNT), NUMCOUNT)
+rate100 <- matrix(rep(NA, NUMCOUNT), NUMCOUNT)
+for(i in 1:NUMCOUNT){ 
+	rate100[i] <- (dim(brfss[scfips==as.character(factor(full[i,2])) & smk100==1 & !is.na(smk100),])[1] / dim(brfss[scfips==as.character(factor(full[i,2])),])[1])
+}
+
+full <- cbind(full, rate100)
+
+###############################
+## Calculate Metal Concentrations ##
+###############################
+
+## Import Metals data
+metal <- read.csv("C:/Users/jputila/Desktop/Heavy Metal Data/geochem-2009-10-22-14-17-04.txt")
+metal$FIPS <- substr(metal$FIPS, 2, 6)
+
+## Get rid of invalid pH values
+metal$PH <- ifelse(metal$PH == 88, NA, metal$PH)
+
+## County FIPS Identifier to confirm accuracy of matching scheme
+MetalName <- matrix(NA, nrow = NUMCOUNT, ncol = 1) 
+for(i in 1:NUMCOUNT){ MetalName[i] <- as.character(factor(full[i,]$County))}
+
+## Arsenic
+## Calculate As values
+## Do not include "-20" codes in estimates
+Ascounty <- matrix(NA, nrow = NUMCOUNT, ncol = 1) 
+for(i in 1:NUMCOUNT){
+	Ascounty[i] <- mean(c(na.omit(metal[metal[,42] == as.character(factor(full[i,]$FIPS)) & metal$AS_ICP40 >= 0,]$AS_ICP40) , 
+					na.omit(metal[metal[,42] == as.character(factor(full[i,]$FIPS)) & metal$AS_AA >= 0 ,]$AS_AA),
+					na.omit(metal[metal[,42] == as.character(factor(full[i,]$FIPS)) & metal$AS_INAA >= 0 ,]$AS_INAA)))
+}
+Ascounty <- ifelse(Ascounty==0, NA, Ascounty)
+
+## Final data set
+full <- cbind(full, MetalName, Ascounty)
+
+## Remove metal Dsets
+#rm(MetalName, Ascounty)
+
+
+#####################
+## Statistical Analyses ##
+#####################
+
+## GGPlot package
+library(ggplot2)
+
+## Confidence intervals 
+cconf <- function(model){
+	numcov <- dim(coef(summary(model)))[1]
+	uci <- NA
+	lci <- NA
+	for(i in 1:numcov){
+	lci[i] <- exp(coef(summary(model))[i,1] - 1.96*coef(summary(model))[i,2]) 
+	uci[i] <- exp(coef(summary(model))[i,1] + 1.96*coef(summary(model))[i,2])
+	}
+	outT <- data.frame(c(dimnames(coef(summary(model)))[1]), lci, exp(coef(summary(model))[,1]), uci)
+	names(outT) <- c("Variable", "LowerCI", "Estimate", "UpperCI")
+	outT	
+}
+
+############################
+## Read in supplementary data ##
+############################
+
+## Read in data if saved previously
+## full <- read.csv("C:/Users/jputila/Desktop/PLoS_Supplementary/full_8_18.csv")
+## Remove Column Header
+## full <- full[,-1]
+
+AdjRatebak <- full$AdjRate
+full$AdjRate <- round(as.numeric(full$AdjRate),0)
+
+## Assign smoking rate (>=100 cigs over lifetime)
+full$smkrate <- full$rate100
+
+#######################
+## Measure Associations ##
+#######################
+
+## Generate centered and transformed variables
+full$lnAs <- log(full$Ascounty) - mean(na.omit(log(full$Ascounty)))
+full$lnInc <- log(full$MedIncome) - mean(na.omit(log(full$MedIncome)))
+full$Population <- as.numeric(as.character(full$Population))
+full$lnsmk <- full$smkrate
+
+## Bivariate, Untransformed
+## Arsenic Levels and Lung Cancer Incidence, weighted
+glm1 <- glm(full$AdjRate ~ full$Ascounty, family=poisson, weights=as.numeric(full$Population))
+summary(glm1)
+cconf(glm1)
+plot(y=log(full$AdjRate), x=full$Ascounty, ylab="ln(Cancer Incidence per 10,000,000)", xlab="ln(As [ppm])", main="Association between Chromium and Lung Cancer Incidence")
+abline(a=glm1$coef[1], b=glm1$coef[2], col=1)
+
+glm1T <- data.frame(glm1$linear.predictors, glm1$y, glm1$model[3])
+glm1gg <- ggplot(glm1T, aes(x=glm1.linear.predictors, y=log(glm1.y)))
+glm1gg + geom_point(aes(size=X.weights.)) + 
+		 geom_abline(coef(glm(log(full$AdjRate) ~ full$Ascounty, family=poisson, weights=as.numeric(full$Population))))
+
+
+## Adjusted, Untransformed
+## Arsenic, Smoking, SES
+SESassmk <- glm(full$AdjRate ~ full$smkrate + full$Ascounty + full$MedIncome, family=poisson, weights=as.numeric(full$Population))
+summary(SESassmk)
+cconf(SESassmk)
+
+
+## Estimate the 25, 50, amd 75% quartile points for each variable for the quartiles interaction models
+AsCut <- NA
+AsCut[1] <- as.numeric(summary(full$lnAs)[2])
+AsCut[2] <- as.numeric(summary(full$lnAs)[3])
+AsCut[3] <- as.numeric(summary(full$lnAs)[5])
+
+SmkCut <- NA
+SmkCut[1] <- as.numeric(summary(full$lnsmk)[2])
+SmkCut[2] <- as.numeric(summary(full$lnsmk)[3])
+SmkCut[3] <- as.numeric(summary(full$lnsmk)[5])
+
+SESCut <- NA
+SESCut[1] <- as.numeric(summary(full$lnInc)[2])
+SESCut[2] <- as.numeric(summary(full$lnInc)[3])
+SESCut[3] <- as.numeric(summary(full$lnInc)[5])
+
+
+## Continuous Interaction Models
+## Arsenic and Smoking
+AsSmk <- full$lnAs * full$lnsmk
+intAsSmk <- aov(full$AdjRate ~ full$lnsmk + full$lnAs + full$lnInc + AsSmk, weights=as.numeric(full$Population))
+summary(intAsSmk)
+
+## Arsenic and SES
+AsSES <- full$lnAs * full$lnInc
+intAsSES <- aov(full$AdjRate ~ full$lnsmk + full$lnAs + full$lnInc + AsSES, weights=as.numeric(full$Population))
+summary(intAsSES)
+
+
+## Calculate Strat Groups ##
+## Smoking Quartiles
+smkgrp <- ifelse(is.na(full$lnsmk), NA, ifelse(full$lnsmk < SmkCut[1], 1, ifelse(full$lnsmk >= SmkCut[1] & full$lnsmk < SmkCut[2], 2, ifelse(full$lnsmk >= SmkCut[2] & full$lnsmk < SmkCut[3], 3, 4))))
+## SES Low-Income Cutoffs
+SESgrp <- ifelse(is.na(full$MedIncome), NA, ifelse(full$MedIncome < 24000 & !is.na(full$MedIncome), 1, ifelse(full$MedIncome>= 24000 & full$MedIncome< 28700, 2, ifelse(full$MedIncome >= 28700 & full$MedIncome < 38300, 3, 4))))
+## SES Quartiles
+#SESgrp <- ifelse(full$lnInc< -0.158, 1, ifelse(full$lnInc>=-0.158 & full$lnInc< -0.00391, 2, ifelse(full$lnInc>=-0.00391 & full$lnInc <0.1478, 3, 4)))
+## Arsenic Quartiles
+AsQ <- ifelse(is.na(full$lnAs), NA, ifelse(full$lnAs < AsCut[1], 1, ifelse(full$lnAs >= AsCut[1] & full$lnAs < AsCut[2], 2, ifelse(full$lnAs >= AsCut[2] & full$lnAs < AsCut[3], 3, 4))))
+
+## Quartile-Based Interaction Models
+## Convert quartiles to factors
+AsQf <- as.factor(AsQ)
+smkgrpf <- as.factor(smkgrp)
+smkgrpfbak <- smkgrpf
+SESgrpf <- as.factor(SESgrp)
+
+
+#############
+## ARSENIC ##
+#############
+## Arsenic and Smoking
+smkgrpf <- smkgrpfbak
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+intAsSmk <- aov(full$AdjRate ~ SESgrpf + AsQf*smkgrpf, weights=as.numeric(full$Population))
+summary(intAsSmk)
+
+## Without SES
+intAsSmk2 <- aov(full$AdjRate ~ AsQf*smkgrpf, weights=as.numeric(full$Population))
+summary(intAsSmk2)
+
+## Arsenic and SES
+intAsSES <- aov(full$AdjRate ~ smkgrpf + AsQf*SESgrpf, weights=as.numeric(full$Population))
+summary(intAsSES)
+
+
+## GLMS for smoking levels WITHOUT SES
+## Bottom 50% vs Top 50%
+smkgrpf <- smkgrpfbak
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+r1 <- glm(full[smkgrpf==1,]$AdjRate ~ full[smkgrpf==1,]$lnAs, family=poisson, weights=as.numeric(full[smkgrpf==1,]$Population))
+summary(r1)
+r2 <- glm(full[smkgrpf==2,]$AdjRate ~ full[smkgrpf==2,]$lnAs, family=poisson, weights=as.numeric(full[smkgrpf==2,]$Population))
+summary(r2)
+
+
+## Plot the Interaction between Arsenic and Smoking WITHOUT SES
+data1 <- cbind( c(t(r1$model[2]),t(r2$model[2])),
+				c(log(r1$fitted.values),log(r2$fitted.values)),
+				c(r1$weights, r2$weights),
+				c(rep("1",dim(r1$model[2])[1]), rep("2",dim(r2$model[2])[1])))
+data1 <- as.data.frame(data1, stringsAsFactors=FALSE)
+names(data1) <- c("logAs","logRate", "weight", "smkgrp")
+data1$logAs  <- as.numeric(as.character(data1$logAs))
+data1$logRate <- as.numeric(as.character(data1$logRate))
+data1$weight  <- as.numeric(as.character(data1$weight))
+data1$smkgrp  <- as.numeric(as.character(data1$smkgrp))
+data1$adjinc  <- c(as.numeric(coef(r1)[2])*r1$model[,2]*0, as.numeric(coef(r2)[2])*r2$model[,2]*0)
+data1$adjrate <- data1$adjinc+data1$logRate
+
+assmkp <- ggplot(data1, aes(x=logAs, y=adjrate, shape=factor(smkgrp), color=factor(smkgrp))) 
+assmkp + stat_smooth(method = "glm", level=0.95, alpha=1, fill="grey80", color="black") +
+		 #scale_color_manual(values=c("grey50","grey70")) +		
+		 geom_point(aes(size=weight)) +
+		 geom_point() +
+		 opts(legend.position = "right") +
+		 theme_bw()
+
+
+
+## GLMS for smoking levels WITH SES
+smkgrpf <- smkgrpfbak
+## Bottom 50% vs Top 50%
+smkgrpf <- ifelse(is.na(smkgrpf), NA, ifelse(smkgrpf==1 | smkgrpf==2, 1, 2))
+r1 <- glm(full[smkgrpf==1,]$AdjRate ~ full[smkgrpf==1,]$lnAs + full[smkgrpf==1,]$MedIncome, family=poisson, weights=as.numeric(full[smkgrpf==1,]$Population))
+summary(r1)
+r2 <- glm(full[smkgrpf==2,]$AdjRate ~ full[smkgrpf==2,]$lnAs + full[smkgrpf==2,]$MedIncome, family=poisson, weights=as.numeric(full[smkgrpf==2,]$Population))
+summary(r2)
+
+
+## Plot the Interaction between Arsenic and Smoking with SES
+data1 <- cbind( c(t(r1$model[2]),t(r2$model[2])), 
+				c(log(r1$fitted.values),log(r2$fitted.values)),
+				c(r1$weights, r2$weights), 
+				c(rep("1",dim(r1$model[2])[1]), rep("2",dim(r2$model[2])[1])))
+data1 <- as.data.frame(data1, stringsAsFactors=FALSE)
+names(data1) <- c("logAs","logRate", "weight", "smkgrp")
+data1$logAs  <- as.numeric(as.character(data1$logAs))
+data1$logRate <- as.numeric(as.character(data1$logRate))
+data1$weight  <- as.numeric(as.character(data1$weight))
+data1$smkgrp  <- as.numeric(as.character(data1$smkgrp))
+data1$adjinc  <- c(as.numeric(coef(r1)[2])*r1$model[,2], as.numeric(coef(r2)[2])*r2$model[,2])
+data1$adjrate <- data1$adjinc+data1$logRate
+
+assmkp <- ggplot(data1, aes(x=logAs, y=adjrate, shape=factor(smkgrp), color=factor(smkgrp))) 
+assmkp + stat_smooth(method = "glm", level=0.95, alpha=1, fill="grey80", color="black") +
+		 #scale_color_manual(values=c("grey50","grey70")) +		
+		 geom_point(aes(size=weight)) +
+		 geom_point() +
+		 opts(legend.position = "right") +
+		theme_bw()
+
+
+#################################
+## West Virginia / Kentucky Analyses ##
+#################################
+
+## Create WV/KY set via FIPS (WV=54, KY=21)
+wvky <- full[full$SFIPS==54 | full$SFIPS==21,]
+
+## Bivariate, National
+glm1 <- glm(full$AdjRate ~ full$lnAs, family=poisson, weights=as.numeric(full$Population))
+summary(glm1)
+plot(full$AdjRate, full$lnAs, xlab="Cancer Incidence per 100,000", ylab="As [ppm]")
+abline(a=glm1$coef[1], b=glm1$coef[2], col=1)
+
+## Adjusted for Smoking, National
+glm2 <- glm(full$AdjRate ~ full$smkrate + full$Ascounty, family=poisson, weights=as.numeric(full$Population))
+summary(glm2)
+
+## Adjusted for Smoking, Income, National
+glm3 <- glm(full$AdjRate ~ full$smkrate + full$Ascounty + full$MedIncome, family=poisson, weights=as.numeric(full$Population))
+summary(glm3)
+
+## GGplot
+full$wvkyid <- ifelse(full$SFIPS==54 | full$SFIPS==21, 1, 0)
+cols <- c("0" = "red","1" = "blue")
+p1 <- ggplot(full, aes(y=AdjRate, x=log(Ascounty), weight=Population, colour=full$wvkyid))
+p1 + stat_smooth(method=glm, level=0.95, alpha=1, fill="grey80", color="black") + geom_point() + scale_colour_manual(values = cols, limits = c("0", "1")) + theme_bw()
+
+## Compare residuals for predicting on WVKY using the National fully controlled model
+pred1 <- predict(glm3, full)
+hist(pred1)
+diffresid <- pred1 - log(full$AdjRate)
+resids <- data.frame(as.character(full$County), pred1, full$AdjRate, diffresid)
+qplot(diffresid[full$wvkyid==1], data=resids, geom="histogram") + theme_bw()
+
+
+## Determine the concentration of each heavy metal in KY|WV and !KY&!WV
+## Average County averages for both states
+## Arsenic
+KYWVas 	  <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty)) 
+KYWVas
+notKYWVas <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty)) 
+notKYWVas
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty))
+
+## Smoking Prevalence
+KYWVsmk 	  <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate)) 
+KYWVsmk
+notKYWVsmk <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate)) 
+notKYWVsmk
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate))
+
+## Median Income
+KYWVmed	   <- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome)) 
+KYWVmed
+notKYWVmed <- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome)) 
+notKYWVmed
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome))
+
+## Lung cancer incidence
+KYWVrate	<- mean(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate)) 
+KYWVrate
+notKYWVrate	<- mean(na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate)) 
+notKYWVrate
+t.test(na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate), 
+	   na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate))
+
+
+## Draw a bar chart of the values used in the T-tests
+bardata <- c(notKYWVas, KYWVas,
+			 notKYWVsmk*100, KYWVsmk*100, notKYWVmed/1000, KYWVmed/1000, notKYWVrate, KYWVrate)
+barcats <- c("Arsenic", "Arsenic",
+			 "Smoking", "Smoking", "Income", "Income", "Rate", "Rate")
+barid <- c("Other", "WV/KY",
+		   "Other", "WV/KY", "Other", "WV/KY", "Other", "WV/KY")
+bardata1 <- data.frame(barid, barcats, bardata)
+names(bardata1) <- c("ID", "Category", "Values")
+
+bar1 <- ggplot(bardata1, aes(Category, fill=ID, y=Values))
+bar1 +  geom_bar(position="dodge", stat="identity") + theme_bw()
+
+
+
+## END of code 
+

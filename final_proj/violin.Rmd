@@ -1,0 +1,98 @@
+---
+title: "Violin Plots"
+author: "Joshua Burkhart"
+date: "November 22, 2015"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(broom)
+library(ggfortify)
+library(GGally)
+library(car)
+library(MBESS)
+library(ggplot2)
+library(magrittr)
+```
+
+```{r echo=FALSE,include=FALSE,results="hide"}
+full <- read.csv(
+  "/Users/joshuaburkhart/SoftwareProjects/Probability/final_proj/data.csv",
+  row.names = 1)
+
+## Generate centered and transformed variables
+full$lnAs <- log(full$Ascounty) - mean(na.omit(log(full$Ascounty)))
+full$lnInc <- log(full$MedIncome) - mean(na.omit(log(full$MedIncome)))
+full$Population <- as.numeric(as.character(full$Population))
+full$lnsmk <- full$smkrate
+full$lnar <- log(full$AdjRate)
+```
+
+```{r}
+# Violin Plots
+
+## Arsenic
+KYWVas 	  <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$Ascounty)
+notKYWVas <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$Ascounty)
+KYWVdf    <- KYWVas    %>% as.data.frame() %>%
+  mutate(KYWV="KYWV") %>% select("Ascounty"=1,"KYWV"=2)
+notKYWVdf <- notKYWVas %>% as.data.frame() %>%
+  mutate(KYWV="notKYWV") %>% select("Ascounty"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=Ascounty)) +
+  geom_violin(aes(fill = factor(KYWV))) +
+  geom_boxplot(width=0.1)
+```
+
+\pagebreak
+
+```{r}
+## Smoking Prevalence
+KYWVsmk 	 <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$smkrate)
+notKYWVsmk <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$smkrate)
+KYWVdf    <- KYWVsmk    %>% as.data.frame() %>%
+  mutate(KYWV="KYWV") %>% select("smkrate"=1,"KYWV"=2)
+notKYWVdf <- notKYWVsmk %>% as.data.frame() %>%
+  mutate(KYWV="notKYWV") %>% select("smkrate"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=smkrate)) +
+  geom_violin(aes(fill = factor(KYWV))) +
+  geom_boxplot(width=0.1)
+```
+
+\pagebreak
+
+```{r}
+## Median Income
+KYWVmed	   <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$MedIncome)
+notKYWVmed <- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$MedIncome) 
+KYWVdf    <- KYWVmed    %>% as.data.frame() %>%
+  mutate(KYWV="KYWV") %>% select("MedIncome"=1,"KYWV"=2)
+notKYWVdf <- notKYWVmed %>% as.data.frame() %>%
+  mutate(KYWV="notKYWV") %>% select("MedIncome"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=MedIncome)) +
+  geom_violin(aes(fill = factor(KYWV))) +
+  geom_boxplot(width=0.1)
+```
+
+\pagebreak
+
+```{r}
+## Lung cancer incidence
+KYWVrate	  <- na.omit(full[full$SFIPS==21 | full$SFIPS==54,]$AdjRate)
+notKYWVrate	<- na.omit(full[full$SFIPS!=21 & full$SFIPS!=54,]$AdjRate) 
+KYWVdf    <- KYWVrate    %>% as.data.frame() %>%
+  mutate(KYWV="KYWV") %>% select("AdjRate"=1,"KYWV"=2)
+notKYWVdf <- notKYWVrate %>% as.data.frame() %>%
+  mutate(KYWV="notKYWV") %>% select("AdjRate"=1,"KYWV"=2)
+KYWVcombined = merge(KYWVdf,notKYWVdf,all=TRUE)
+KYWVcombined %>% ggplot(aes(x=KYWV,y=AdjRate)) + 
+  geom_violin(aes(fill = factor(KYWV))) +
+  geom_boxplot(width=0.1)
+```
