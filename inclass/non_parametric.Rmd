@@ -21,6 +21,7 @@ library(magrittr)
 library(dplyr)
 library(tidyr)
 library(car)
+library(datasets)
 ```
 
 ## Parametric tests of homogeneity of variances
@@ -87,11 +88,224 @@ with(air8and9, leveneTest(Ozone ~ factor(Month), center = median))
 
 ## Wilcoxon Mann Whitney (WMW) test for stochastic ordering of alternatives
 
-### A simple example of the null hypothesis
-### An extreme example of the alternative hypothesis
+```{r}
+# library(datasets)
+data("esoph")
+head(esoph)
+```
+
+```{r}
+# unit of analysis is records for 88 age/alcohol/tobacco combinations
+
+# collapse across age/tobacco combinations
+tidy_esoph <- esoph %>%
+  group_by(alcgp) %>%
+  dplyr::summarise(cases = sum(ncases),
+            controls = sum(ncontrols)) %>%
+  gather(group, n, -alcgp) %>%
+  mutate(alcgp = as.numeric(alcgp)) # required for wilcoxon test
+
+# need to create data with unit of analysis = participant
+esoph_data <- tidy_esoph %>% 
+  group_by(group) %>%
+  do(data.frame(y = rep(.$alcgp, .$n)))
+
+head(esoph_data)
+```
+
+```{r}
+esoph_data %>%
+  group_by(group, y) %>%
+  tally()
+```
+
+```{r}
+# run the test!
+wilcox.test(y ~ group, data = esoph_data)
+```
+
 ### Air quality data
-### Practical Advice
+
+```{r}
+sum(1:55) #check with R
+```
+
+```{r}
+min_rank_sum <- cbind(min_R_A=sum(1:26), min_R_B=sum(1:29))
+min_rank_sum #This is what R subtracts from W
+```
+
+```{r}
+pwilcox(377, 26, 29) #pi=P(W0) based on discrete distribution
+```
+
+```{r}
+qwilcox(.5, 26, 29) #this would gotten us to W0 also
+```
+
+```{r}
+qwilcox(.025, 26, 29)
+```
+
+```{r}
+qwilcox(.975, 26, 29)
+```
+
+```{r}
+air_ranks <- airquality %>%
+  filter(Month %in% c(5, 9), !is.na(Ozone)) %>%
+  mutate(oz_rank = rank(Ozone, ties.method = "average"))
+# check that it worked
+air_ranks %>%
+  arrange(oz_rank) %>%
+  head()
+```
+
+```{r}
+obs_rank_sum <- air_ranks %>%
+  group_by(Month) %>%
+  dplyr::summarise(rank_sum = sum(oz_rank))
+obs_rank_sum
+```
+
+```{r}
+w_a <- obs_rank_sum$rank_sum[1] - min_rank_sum[1]
+w_b <- obs_rank_sum$rank_sum[2] - min_rank_sum[2]
+w_min <- min(w_a, w_b) #take the minimum as the test statistic
+cbind(w_a, w_b, w_min)
+```
+
+```{r}
+p_min <- min(pwilcox(w_min, 26, 29), 1-pwilcox(w_min, 26, 29))
+p_2tailed <- 2*p_min
+c(w_min, p_2tailed)
+```
+
+```{r}
+w1 <- wilcox.test(Ozone ~ Month, data = airquality,
+            subset = Month %in% c(5, 9), correct = FALSE, exact = TRUE)
+```
+
+```{r}
+w1
+```
+
+```{r}
+lowerz <- -1.559383
+upperz <- -1.576241
+pmin <- min(pnorm(lowerz), 1 - pnorm(upperz))
+2*pmin
+```
+
+```{r}
+# library(coin)
+# coin is especially fussy about predictors as factors
+air_ranks$Month <- as.factor(air_ranks$Month)
+w2 <- wilcox_test(Ozone ~ Month, data = air_ranks, conf.int = TRUE, distribution = "exact")
+w2
+```
+
+```{r}
+# and right back where we started from!
+w2@statistic@linearstatistic # the uncorrected observed rank sum for group A
+```
+
+```{r}
+w2@statistic@linearstatistic - min_rank_sum[1] # the corrected observed W for group A
+```
+
+```{r}
+# we can also check what W was under the null
+expectation(w2) # should give you 728
+```
+
+```{r}
+w_asymp <- wilcox_test(Ozone ~ Month, data = air_ranks, conf.int = TRUE)
+w_asymp
+```
+
+```{r}
+x <- air_ranks$Ozone[air_ranks$Month == 5] 
+y <- air_ranks$Ozone[air_ranks$Month == 9] 
+diffs <- sort(as.vector(outer(y, x, "-")))
+median(diffs)
+```
+
+```{r}
+# library(pairwiseCI)
+# pairwiseCI can be especially fussy about predictors as factors
+air_ranks$Month <- as.factor(air_ranks$Month)
+pairwiseCI(Ozone ~ Month, data= air_ranks, method = "HL.diff") #Exact conditional nonparametric CI for difference of locations
+```
+
+```{r}
+air_ranks %>%
+  group_by(Month) %>%
+  summarise(medians = median(Ozone))
+```
+
+```{r}
+n_a <- 26
+n_b <- 29
+u_a <- n_a*n_b + min_rank_sum[1] - obs_rank_sum$rank_sum[1]
+u_b <- n_a*n_b + min_rank_sum[2] - obs_rank_sum$rank_sum[2]
+cbind(u_a, u_b, min(u_a, u_b))
+```
   
 ## Your turn
+
+
+```{r}
+library(MASS)
+data(birthwt)
+```
+
+```{r}
+select <- dplyr::select
+```
+
+
+1. The total rank sum
+
+
+
+2. Expected rank sums for groups A and B under the null hypothesis
+
+
+
+3. Minimum rank sums for groups A and B
+
+
+
+4. The expected (corrected) W statistic under the null hypothesis for groups A and B
+
+
+
+5. The regions of rejection (α=.05, two tailed) for the expected (corrected) W statistic for groups A and B
+
+
+
+6. Observed (uncorrected) rank sums for groups A and B
+
+
+
+7. Observed (corrected) rank sums for groups A and B
+
+
+
+8. The observed (minimum corrected) W statistic and its p-value
+
+
+
+9. The z-statistic and its p-value (either exact or asymptotic depending on your sample size)
+
+
+
+10. The Hodges-Lehmann estimate and its 95% confidence interval
+
+
+
+11. What do the results suggest about your null hypothesis?
+
 
 
