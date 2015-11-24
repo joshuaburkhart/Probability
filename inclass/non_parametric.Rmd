@@ -1,0 +1,97 @@
+---
+title: "non_parametric"
+author: "Joshua Burkhart"
+date: "November 24, 2015"
+output: pdf_document
+---
+
+# Class 16: Nonparametric methods for two sample problems
+
+```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/",
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE,
+                      echo = TRUE,
+                      error = TRUE,
+                      fig.width = 11,
+                      comment = NA)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(car)
+```
+
+## Parametric tests of homogeneity of variances
+
+```{r}
+set.seed(10)
+low <- rnorm(30, 0, 3) 
+med <- rnorm(30, 0, 6)
+high <- rnorm(30, 0, 12)
+var_df <- data.frame(low, med, high)
+var_df_plot <- var_df %>%
+  gather(var, y)
+ggplot(var_df_plot, aes(x = factor(var), y = y)) +
+  geom_boxplot() +
+  geom_jitter(position = position_jitter(height = 0, 
+    width = 0.25), fill = "lightseagreen", colour = "lightseagreen", alpha = 0.75, size = 3)
+```
+
+```{r}
+# filter to just months 5 and 9
+air5and9 <- airquality %>%
+  filter(Month %in% c(5, 9))
+
+air5and9 %>%
+  group_by(Month) %>%
+  dplyr::summarise(vars = var(Ozone, na.rm = TRUE),
+            sds = sd(Ozone, na.rm = TRUE))
+```
+
+```{r}
+# library(car)
+# Levene's test
+with(air5and9, leveneTest(Ozone ~ factor(Month), center = mean))
+```
+
+```{r}
+# library(car)
+# Brown-Forsythe
+with(air5and9, leveneTest(Ozone ~ factor(Month), center = median))
+```
+
+```{r}
+# filter to just months 8 and 9
+air8and9 <- airquality %>%
+  filter(Month %in% c(8, 9))
+
+air8and9 %>%
+  group_by(Month) %>%
+  dplyr::summarise(vars = var(Ozone, na.rm = TRUE),
+            sds = sd(Ozone, na.rm = TRUE))
+```
+
+```{r}
+# library(car)
+# Levene's test
+with(air8and9, leveneTest(Ozone ~ factor(Month), center = mean))
+```
+
+```{r}
+# library(car)
+# Brown-Forsythe
+with(air8and9, leveneTest(Ozone ~ factor(Month), center = median))
+```
+
+## Wilcoxon Mann Whitney (WMW) test for stochastic ordering of alternatives
+
+### A simple example of the null hypothesis
+### An extreme example of the alternative hypothesis
+### Air quality data
+### Practical Advice
+  
+## Your turn
+
+
