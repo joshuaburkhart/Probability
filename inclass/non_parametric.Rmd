@@ -2,7 +2,9 @@
 title: "non_parametric"
 author: "Joshua Burkhart"
 date: "November 24, 2015"
-output: pdf_document
+output: 
+  pdf_document: 
+    latex_engine: xelatex
 ---
 
 # Class 16: Nonparametric methods for two sample problems
@@ -22,6 +24,9 @@ library(dplyr)
 library(tidyr)
 library(car)
 library(datasets)
+library(coin)
+library(pairwiseCI)
+options(scipen=999)
 ```
 
 ## Parametric tests of homogeneity of variances
@@ -254,6 +259,7 @@ cbind(u_a, u_b, min(u_a, u_b))
   
 ## Your turn
 
+The hypothesis that babies born to mothers who smoked have different birthweights than babies whose mothers did not smoke (2-tailed test).
 
 ```{r}
 library(MASS)
@@ -267,45 +273,108 @@ select <- dplyr::select
 
 1. The total rank sum
 
-
+```{r}
+rank_sum <- sum(1:nrow(birthwt))
+rank_sum
+```
 
 2. Expected rank sums for groups A and B under the null hypothesis
 
+```{r}
+na <- birthwt %>% filter(smoke==0) %>% nrow()
+nb <- birthwt %>% filter(smoke==1) %>% nrow()
 
+exp_R_A <- (na * (nrow(birthwt) + 1))/2
+exp_R_B <- (nb * (nrow(birthwt) + 1))/2
+exp_R_A
+exp_R_B
+```
 
 3. Minimum rank sums for groups A and B
 
-
+```{r}
+min_rank_sum <- cbind(min_R_A=sum(1:na),min_R_B=sum(1:nb))
+min_rank_sum
+```
 
 4. The expected (corrected) W statistic under the null hypothesis for groups A and B
 
-
+```{r}
+w_a_null <- exp_R_A - min_rank_sum[1] #qwilcox(.5,na,nb)
+w_b_null <- exp_R_B - min_rank_sum[2] #qwilcox(.5,nb,na)
+w_a_null
+w_b_null
+pwilcox(w_a,na,nb)
+qwilcox(.5,na,nb)
+```
 
 5. The regions of rejection (α=.05, two tailed) for the expected (corrected) W statistic for groups A and B
 
-
+```{r}
+w_lo <- qwilcox(.025,na,nb)
+w_hi <- qwilcox(.975,na,nb)
+w_lo
+w_hi
+```
 
 6. Observed (uncorrected) rank sums for groups A and B
 
+```{r}
+birthwt_ranks <- birthwt %>%
+  filter(smoke %in% c(0,1), !is.na(bwt)) %>%
+  mutate(bwt_rank = rank(bwt, ties.method = "average"))
 
+birthwt_ranks %>% 
+  arrange(bwt_rank) %>%
+  head()
+
+obs_rank_sum <- birthwt_ranks %>%
+  group_by(smoke) %>%
+  dplyr::summarise(rank_sum = sum(bwt_rank))
+
+obs_rank_sum
+```
 
 7. Observed (corrected) rank sums for groups A and B
 
-
+```{r}
+w_a_obs <- obs_rank_sum$rank_sum[1] - min_rank_sum[1]
+w_b_obs <- obs_rank_sum$rank_sum[2] - min_rank_sum[2]
+w_a_obs
+w_b_obs
+```
 
 8. The observed (minimum corrected) W statistic and its p-value
 
-
+```{r}
+w_min <- min(w_a_obs, w_b_obs) #take the minimum as the test statistic
+p_min <- min(pwilcox(w_min, na, nb), 1-pwilcox(w_min, na, nb))
+p_2tailed <- 2*p_min
+c(w_min, p_2tailed)
+```
 
 9. The z-statistic and its p-value (either exact or asymptotic depending on your sample size)
 
-
+```{r}
+mu_w_a <- (na * (nrow(birthwt) + 1))/2
+mu_w_a
+sd_w_a <- (na * nb * (nrow(birthwt) + 1))/2
+sd_w_a
+z_a <- (w_a_obs + .5 - mu_w_a)/sqrt(sd_w_a)
+z_a
+lowerz <- z_a + .5
+upperz <- z_a - .5
+pmin <- min(pnorm(lowerz), 1 - pnorm(upperz))
+2*pmin
+```
 
 10. The Hodges-Lehmann estimate and its 95% confidence interval
 
-
+```{r}
+birthwt_ranks$smoke <- as.factor(birthwt_ranks$smoke)
+pairwiseCI(bwt ~ smoke, data= birthwt_ranks, method = "HL.diff")
+```
 
 11. What do the results suggest about your null hypothesis?
 
-
-
+> The results suggest mothers who smoke during pregnancy give birth to children with lower median weights than mothers who don't smoke during pregnancy.
