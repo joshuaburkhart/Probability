@@ -1,0 +1,70 @@
+---
+title: "tables"
+author: "Joshua Burkhart"
+date: "November 30, 2015"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+# Final Project Tables
+
+```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/",
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE,
+                      echo = TRUE,
+                      error = TRUE,
+                      fig.width = 11,
+                      comment = NA)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(car)
+library(datasets)
+library(coin)
+library(pairwiseCI)
+library(knitr)
+options(scipen=999)
+```
+
+
+##Table 1: Unadjusted  
+
+```{r}
+Model_and_Variable = c("Arsenic")
+Coefficient = c(0.0045)
+Std.Error = c(0.0000019)
+Odds_Ratio_CI = c("1.004 (1.004-1.004)")
+P_value = c("P<0.0001")
+N = c(742)
+df = data.frame(Model_and_Variable,Coefficient,Std.Error,Odds_Ratio_CI,P_value,N)
+kable(df)
+```
+
+## Table 1: Adjusted  
+
+```{r}
+Model_and_Variable = c("Arsenic","Smoking","Median Income")
+Coefficient = c(0.0039,1.80,-0.00000000354)
+Std.Error = c(0.0000019,0.0002,0.00000000131)
+Odds_Ratio_CI = c("1.004 (1.004-1.004)","6.061 (6.059–6.064)","0.999 (0.999–0.999)")
+P_value = c("P<0.0001")
+N = c(585)
+df = data.frame(Model_and_Variable,Coefficient,Std.Error,Odds_Ratio_CI,P_value,N)
+kable(df)
+```
+
+## Table 2:  
+
+```{r}
+Compound = c("Arsenic")
+Low_ppm = c(1.477)
+High_ppm = c(14.525)
+B_Estimate = c(0.0039)
+Lung_Cancer_Rate_Increase_Pct = c("5.3%")
+df = data.frame(Compound,Low_ppm,High_ppm,B_Estimate,Lung_Cancer_Rate_Increase_Pct)
+kable(df)
+```
