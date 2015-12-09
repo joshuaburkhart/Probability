@@ -1,0 +1,142 @@
+---
+title: "hw5"
+author: "Joshua Burkhart"
+date: "December 8, 2015"
+output: 
+  pdf_document: 
+    latex_engine: xelatex
+---
+
+# Homework 5: ANOVA
+
+```{r global_options, echo=FALSE, include=FALSE, error=FALSE}
+knitr::opts_chunk$set(fig.path = "Figs/",
+                      message = FALSE,
+                      warning = FALSE,
+                      include = TRUE,
+                      echo = TRUE,
+                      error = TRUE,
+                      fig.width = 11,
+                      comment = NA)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(car)
+library(datasets)
+library(coin)
+library(pairwiseCI)
+library(broom)
+library(phia)
+library(Rfit)
+options(scipen=999)
+```
+
+## Analysis of the expression of an isoform of the electroneutral Na+/H+ exchanger (NHE3)
+
+Re-create the following two plots (note: don't worry about colors, but you should be able to make plots that have the same x/y axes, facetting, and geoms using ggplot2):
+
+```{r 2}
+# for comma separated values
+stickle <- read.table("~/Software/Probability/hw5/qPCR_data.csv",
+                        header = TRUE, sep = ",")
+stickle$Temperature <- as.factor(stickle$Temperature)
+```
+
+```{r}
+stickle %>%
+  group_by(Temperature) %>%
+  ggplot() +
+  facet_wrap(~ Ecotype) +
+  geom_boxplot(aes(x=Temperature, y=NHE3,color=Temperature)) +
+  geom_point(aes(x=Temperature, y=NHE3,color=Temperature)) +
+  scale_color_brewer(palette="Paired") + 
+  xlab("Temperature") +
+  theme(legend.position="none")
+```
+
+```{r}
+stickle %>%
+  group_by(Temperature) %>%
+  ggplot() +
+  facet_wrap(~ Ecotype) +
+  geom_violin(aes(x=Temperature, y=NHE3,color=Temperature)) +
+  geom_point(aes(x=Temperature, y=NHE3,color=Temperature)) +
+  scale_color_brewer(palette="Paired") +
+  xlab("Temperature") +
+  theme(legend.position="none")
+```
+
+## On your own
+
+This summary of results appears to focus on a two-way ANOVA predicting NHE3 gene expression levels from Ecotype and Temperature. Run this model on your own: interpret the regression coefficients from the general linear model, using contr.sum for all factor predictors, and conduct any post-hoc comparisons as you see appropriate to aid in interpreting the model.
+
+```{r}
+nhe3_sum <- lm(NHE3 ~ Temperature * Ecotype, 
+               data = stickle, 
+               contrasts = list(Ecotype = contr.sum,
+                                Temperature = contr.sum))
+tidy(nhe3_sum)
+attr(model.matrix(nhe3_sum), "contrasts") # contrast check
+
+#interpreting regression coefficients
+grandmean <- mean(stickle$NHE3)
+
+# main effects
+bTemp1 <- stickle %>% 
+  filter(Temperature == 4) %>% 
+  summarise(bTemp1 = mean(NHE3) - grandmean)
+Ecotype1 <- stickle %>% 
+  filter(Ecotype == "Hybrid") %>% 
+  summarise(bEcotype1 = mean(NHE3) - grandmean)
+Ecotype2 <- stickle %>% 
+  filter(Ecotype == "Lake") %>% 
+  summarise(bEcotype2 = mean(NHE3) - grandmean)
+
+cbind(grandmean, bTemp1, Ecotype1, Ecotype2)
+
+Anova(nhe3_sum,type=2,white.adjust=TRUE)
+```
+
+> It appears the mean NHE3 differed depending on Temperature but
+  not Ecotype.
+  
+```{r}
+nhe3_twowayvars <- augment(nhe3_sum)
+nhe3_resid <- ggplot(data = nhe3_twowayvars, aes(x = .fitted, 
+                                                  y = .resid, 
+                                                  colour = Ecotype)) +
+  geom_point(aes(shape = Temperature), size = 5, position = position_jitter(width = .02)) +
+  scale_colour_brewer(type = "qual", palette = 3) +
+  theme_bw() 
+suppressWarnings(print(nhe3_resid))
+```
+
+```{r}
+plot(nhe3_sum)
+```
+
+```{r}
+testInteractions(nhe3_sum, pairwise = "Temperature", adjustment = "BH")
+testInteractions(nhe3_sum, pairwise = "Temperature", adjustment = "holm")
+plot(interactionMeans(nhe3_sum))
+testInteractions(nhe3_sum, fixed = "Ecotype", pairwise = "Temperature", adjustment = "bonferroni")
+```
+
+> The authors' statement, "substantial change with temperature in the
+  marine ecotype that was not observed in the freshwater ecotype under
+  the conditions tested here," seems to be supported by our interaction
+  test. Indeed, the freshwater ecotype does not exhibit a significant
+  interaction between temperature and NHE3 expression, while the marine 
+  ecotype does.
+
+
+
+
+
+
+
+
+
+
+
