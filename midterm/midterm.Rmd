@@ -28,6 +28,7 @@ library(dplyr)
 library(ggplot2)
 library(broom)
 library(knitr)
+library(magrittr)
 ```
 
 ```{r, echo=FALSE, include=FALSE}
@@ -76,8 +77,8 @@ Are they data.frames, matrices, vectors, lists?
 
 What is the unit of analysis in the dataset?
 
-> Teams: Yearly statistics and standings for teams.  
-  Salaries: Player salary data.  
+> Teams: One row per team-year.  
+  Salaries: One row per player-team-year.  
 
 How many variables/columns?
 
@@ -241,15 +242,22 @@ teams_bat %>%
   geom_smooth(aes(x=yearID,y=max),color="purple")
 ```
 
+> In the figure above, we see that the maximum and minimum number
+  of wins slightly decreases and increases, respectively. This 
+  shows that, as a whole, the league is becoming more heterogeneous
+  and competative.  
+
 ```{r}
 teams_bat %>%
   group_by(yearID) %>%
   select(W) %>%
   summarise_each(funs(min,max)) %>% ggplot() +
-  geom_histogram(aes(min,y=..density..),color="orange") +
-  geom_density(aes(min),color="orange") +
-  geom_histogram(aes(max,y=..density..),color="purple") +
-  geom_density(aes(max),color="purple")
+  geom_violin(aes(x=factor("Min"),y=min),fill="orange") +
+  geom_violin(aes(x=factor("Max"),y=max),fill="purple") +
+  geom_boxplot(aes(x=factor("Min"),y=min),width=0.1) +
+  geom_boxplot(aes(x=factor("Max"),y=max),width=0.1) +
+  ylab("Wins") + 
+  xlab("Max/Min")
 ```
 
 Mean on-base percentage
@@ -269,13 +277,18 @@ teams_bat %>%
   geom_smooth(aes(x=yearID,y=ob_perc),color="green")
 ```
 
+> In the plot above we see that on-base percentage has decreased
+  slightly in recent years.
+
 ```{r}
 teams_bat %>%
   group_by(yearID) %>%
   select(ob_perc,slug_perc) %>%
   summarise_each(funs(mean)) %>% ggplot() +
-  geom_histogram(aes(ob_perc,y=..density..),color="green",binwidth=0.008) +
-  geom_density(aes(ob_perc),color="green")
+  geom_violin(aes(x=factor("On-Base Pct."),y=ob_perc),fill="green") +
+  geom_boxplot(aes(x=factor("On-Base Pct."),y=ob_perc),width=0.1) +
+  ylab("On-Base Pct.") +
+  xlab("")
 ```
 
 Mean slugging percentage
@@ -300,8 +313,10 @@ teams_bat %>%
   group_by(yearID) %>%
   select(ob_perc,slug_perc) %>%
   summarise_each(funs(mean)) %>% ggplot() +
-  geom_histogram(aes(slug_perc,y=..density..),color="red",binwidth=0.008) +
-  geom_density(aes(slug_perc),color="red")
+  geom_violin(aes(x=factor("Slugging Pct."),y=slug_perc),fill="red") +
+  geom_boxplot(aes(x=factor("Slugging Pct."),y=slug_perc),width=0.1) +
+  ylab("Slugging Pct.") +
+  xlab("")
 ```
 
 Mean on-base percentage + slugging
@@ -328,10 +343,12 @@ teams_bat %>%
   group_by(yearID) %>%
   select(ob_perc,slug_perc) %>%
   summarise_each(funs(mean)) %>% ggplot() +
-  geom_histogram(aes(ob_perc,y=..density..),color="green",binwidth=0.008) +
-  geom_density(aes(ob_perc),color="green") +
-  geom_histogram(aes(slug_perc,y=..density..),color="red",binwidth=0.008) +
-  geom_density(aes(slug_perc),color="red")
+  geom_violin(aes(x=factor("On-Base Pct."),y=ob_perc),fill="green") + 
+  geom_violin(aes(x=factor("Slugging Pct."),y=slug_perc),fill="red") +
+  geom_boxplot(aes(x=factor("On-Base Pct."),y=ob_perc),width=0.1) +
+  geom_boxplot(aes(x=factor("Slugging Pct."),y=slug_perc),width=0.1) +
+  ylab("Pct.") +
+  xlab("On-Base / Slugging")
 ```
 
 Bivariate EDA (+ even more wrangling)
@@ -394,7 +411,9 @@ teams_bat %>%
 What do you see? 
 
 > I see a scatter plot centered about y = 0 with a
-z_pay spread that looks similar across year.
+  z_pay spread that looks similar across year. There
+  don't appear to be obvious outliers in this data 
+  except perhaps for the Yankees.
 
 How is this plot different from the previous one with payroll/1000 on the y-axis (from #12)?
 
@@ -444,16 +463,15 @@ payroll across teams.
 
 That is, is your new average payroll z-score also a z-score?
 
-> yes  
+> No.
 
 Are you surprised?
 
-> Not too surprised.
+> Yes!
 
 Why or why not?
 
-> If I think about a z-score has having a unit, z-scoreness?, it makes sense to me that an 
-average of z-scores keeps its z-scoreness.  
+> I thought about a z-score has having a unit so it made sense to me that an average of z-scores keeps its z-scoreness.
 
 Now create a scatterplot to see the association between average payroll z-scores (x-axis) and average number of wins (y-axis).
 
@@ -474,7 +492,7 @@ cor(teams_anl$avg_z_pay,teams_anl$avg_w_cnt)
 Use both the plot and the correlation statistics to evaluate (in words) the form (does the relationship look linear?) and strength of the association between these two variables.
 
 > The form looks as if it can be approximated by a linear
-model. The correlation is slight (cor = 0.6908895, R-squared = 0.4773283)
+model. The correlation is high (cor = 0.6908895, R-squared = 0.4773283)
 but significant (p-value: 2.375e-05).  
 
 Would you be comfortable using a linear model to predict the mean number of wins in a given season given their average relative payroll for that season?
@@ -499,7 +517,7 @@ teams_anl_lm %>% glance()
 
 What are the total, model, and residual sums of squares for this simple linear regression?
 
-> model: 506.05
+> model: 506.05  
   residual: 554.13
 
 What percent of the variation in mean wins is "explained" by variation in mean payroll z-scores?
@@ -525,7 +543,7 @@ What is the average of all ŷ i values (in any simple linear regression model) e
 
 What is the variance of the residuals in your regression model?
 
-> 19.79
+> 19.107
 
 The standard error?
 
